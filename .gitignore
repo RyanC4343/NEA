@@ -1,0 +1,9 @@
+# Ingore assets folder and contents
+/assets/
+
+# The virtual envrionment containg dependencies
+/venv
+
+
+# VSCode settings
+/.vscode
