@@ -17,27 +17,36 @@ pygame.display.set_caption('Td')
 CLOCK = pygame.time.Clock()
 
 class Enemy():
-	def __init__(self, image, type, speedA, speedB): #init function
-		global waypoints
-		self.image = pygame.transform.scale(image, (40,40)) #set enemy image size to 40x40
+	# Init function
+	def __init__(self, image, type, speedA, speedB):
+		# Declare variables and set image size to 40x40 pixels
+		self.image = pygame.transform.scale(image, (40,40))
 		self.rect = self.image.get_rect()
 		self.rect.x, self.rect.y = 20, 20
-		self.speedA = speedA #2 speeds for control of enemy pace
+		# 2 speeds for control of enemy pace
+		self.speedA = speedA 
 		self.speedB = speedB
 		self.pathEnd = False
 		self.type = type
 		self.point = 0
+		# Changes image size for soldiers to 20x20
 		if self.type == 'soldier':
 			self.image = pygame.transform.scale(image, (20, 20))
 
 		self.lives = 5
 
-		self.waypoints = waypoints #sets waypoints for the enemy
-		enemies.append(self) #appends self to object array so it can be called and printed in one function
+		# Uses waypoints from map creation for enemy path
+		self.waypoints = map.waypoints 
+		# Appends self to object array so it can be called and printed in one function
+		enemies.append(self)
 
+	# Print function for the enemy class
 	def print(self):
-		self.move() #calls classes move function
-		SCREEN.blit(self.image, (self.rect.x, self.rect.y)) #print instance to screen
+		# Calls the move function to calculate enemy movement
+		self.move() 
+
+		# Prints instance to screen
+		SCREEN.blit(self.image, (self.rect.x, self.rect.y)) 
 		
 	def move(self):
 		
@@ -69,7 +78,6 @@ class Tile():
 	def __init__(self, type, image):
 		self.size = 50
 		self.image = pygame.transform.scale(image, (50, 50)) #transforms image size to 50x50
-		self.rect = self.image.get_rect()
 		self.type = type #stores passed in type to instance
 
 class Map():
@@ -103,17 +111,19 @@ class Map():
 	'''
 	def create(self):
 
-		# Boolean to indicate if game loop is running
-		creatingMap = True
-
 		# Array to indicate the tile coords of the previously clicked tile
 		prevPoint = None
 
+		firstClick = True
 
-		print("Reached Loop")
-		while creatingMap:
+		while not self.created:
 			# Print map
 			self.print()
+
+			# Print any towers so user can see spwn locatoin
+			for tower in towers:
+				tower.print()
+
 			pygame.display.update()
 
 
@@ -121,18 +131,39 @@ class Map():
 			for event in pygame.event.get():
 				# Check for mouse click on map
 				if event.type == pygame.MOUSEBUTTONDOWN:
+
 					# Get mouse coords
 					mx, my = pygame.mouse.get_pos()
 
 					# Get coords of tile that was clicked
 					x = mx // 50
 					y = my // 50
+					
+					# If first click - create spawn location
+					if firstClick and event.button == 1:
+						# Alter tile to spawn location
+						self.addSpawn(x, y)
+						prevPoint = [x, y]
 
-					# Alter tile type to enemy path
-					self.addpoint(x, y)
+						# Sets first click to false
+						firstClick = False
+
+					# Check for left click: add point
+					elif event.button == 1:
+						# Alter tile type to enemy path
+						valid = self.addpoint(prevPoint, [x, y])
+						if valid:
+							prevPoint = [x, y]
+
+					# Check for right click: add base
+					elif event.button == 3:
+						# Alter tile to base to defend
+						self.addBase(prevPoint, [x, y]) 
+						# SOMEHOW RUNNING TWICE
+
+						
 
 					# Set previous tile to tile that was just clicked
-					prevPoint = [x, y]
 
 
 				# Check for closing window
@@ -142,37 +173,115 @@ class Map():
 
 		
 
-	def addpoint(self, x, y):
-		coords = [x * 50 + 25, y * 50 + 25 ]
+	def addpoint(self, prevCoords, curtCoords):
+		coords = [curtCoords[0] * 50 + 25, curtCoords[1] * 50 + 25]
+
+		# Need to validate coords
+		if prevCoords[0] == curtCoords[0] or prevCoords[1] == curtCoords[1]:
+			valid = True
+		else:
+			return False
+		
+		''' 
+		Have to make 4 separate functions to check the 4 directions.
+		This is because when looping, the indexing ignores the last value,
+		however this means the last value does not get changed. 
+		Had to make a different loop for each of the possible directions
+		'''
+		# Checks if x coords are same - only y position changed
+		if prevCoords[0] == curtCoords [0]:
+			if curtCoords[1] > prevCoords[1]:
+				# Checks if any of the positions between previous and current click are brown
+				for change in range(prevCoords[1] + 1, curtCoords[1] + 1):
+					if self.dimensions[curtCoords[0]][change][0] == 'brown':
+						# Returns false if any are brown
+						return False
+				# If no brown tiles are found, all tiles then changed to brown
+				for change in range(prevCoords[1], curtCoords[1] + 1):
+					self.dimensions[curtCoords[0]][change][0] = 'brown'
+				# Coord added to waypoints list
+				self.waypoints.append(coords)
+				return True
+			
+			elif curtCoords[1] < prevCoords[1]:
+				# Checks if any of the positions between previous and current click are brown
+				for change in range(prevCoords[1] - 1, curtCoords[1] - 1, -1):
+					if self.dimensions[curtCoords[0]][change][0] == 'brown':
+						# Returns false if any are brown
+						return False
+				
+				for change in range(prevCoords[1], curtCoords[1] - 1, -1):
+					self.dimensions[curtCoords[0]][change][0] = 'brown'
+				# Coord added to waypoints list
+				self.waypoints.append(coords)
+				return True				
+
+		# Checks if y coords are same
+		elif prevCoords[1] == curtCoords[1]:
+			if curtCoords[0] > prevCoords[0]:
+				# Checks if any of the positions between previous and current click are brown
+				for change in range(prevCoords[0] + 1, curtCoords[0] + 1, 1):
+					if self.dimensions[change][curtCoords[1]][0] == 'brown':
+						return False
+
+
+				for change in range(prevCoords[0], curtCoords[0] + 1, 1):
+					self.dimensions[change][curtCoords[1]][0] = 'brown'
+				# Coord added to waypoints list
+				self.waypoints.append(coords)
+				return True
+			
+			elif curtCoords[0] < prevCoords[0]:
+				# Checks if any of the positions between previous and current click are brown
+				for change in range(prevCoords[0] - 1, curtCoords[0] - 1, -1):
+					if self.dimensions[change][curtCoords[1]][0] == 'brown':
+						return False
+				
+				for change in range(prevCoords[0], curtCoords[0] - 1, -1):
+					self.dimensions[change][curtCoords[1]][0] = 'brown'
+				# Coord added to waypoints list
+				self.waypoints.append(coords)
+				return True
+		else:
+			return False
+
+
+
+		
+	def addBase(self, prevPoint, currPoint):
+		accepted = self.addpoint(prevPoint, currPoint)
+		if accepted:
+			base = Base(currPoint)
+			self.created = True
+
+	def addSpawn(self, x, y):
+		coords = [x * 50 + 25, y * 50 + 25]
 		self.waypoints.append(coords)
 		self.dimensions[x][y][0] = 'brown'
-		
-	def addbase(self, x, y):
-		self.addpoint(x, y)
-		self.dimensions[x][y][0] = 'base' #need to find tile to print to this location, need to add enemy delete and user life loss at this location
+		tower = Spawn(coords)
 
 
-
-	def print(self): #print function for map
-		#finds columns and rows in dimensions array
+	# Print function for map
+	def print(self): 
+		# Finds columns and rows in dimensions array
 		x = len(self.dimensions)
 		y = len(self.dimensions[0])
 
-		for xPos in range(x): #loops through x axis		
-			for yPos in range(y): #checks rows
+		# Loops through x axis
+		for xPos in range(x): 	
+			# Loops through y axis	
+			for yPos in range(y):
 				if self.dimensions[xPos][yPos][0] == 'green': #checks if position value is green
 					SCREEN.blit(greenTile.image, (xPos * 50, yPos * 50)) #prints green tile to location
 					
 				elif self.dimensions[xPos][yPos][0] == 'brown': #checks if  position value is brown
 					SCREEN.blit(brownTile.image, (xPos * 50, yPos * 50)) #prints brown tile to location
 				
-				#elif self.dimensions[xPos][yPos][0] == 'base': #checks if  position value is brown
-				#	SCREEN.blit(base.image, (xPos * 50, yPos * 50)) #prints brown tile to location
 
 			
 class Tower():
 	def __init__(self, image, type, mx, my, range, cd, bulletDMG):
-		self.image = pygame.transform.scale(image, (greenTile.rect.height-5, greenTile.rect.width-5)) #transforms tower image to 5 pixels smaller than tile size
+		self.image = pygame.transform.scale(image, (greenTile.size - 5, greenTile.size - 5)) #transforms tower image to 5 pixels smaller than tile size
 		self.rect = self.image.get_rect()
 		self.type = type
 		#takes x and y coord on grid
@@ -184,9 +293,11 @@ class Tower():
 		self.bullets = []
 		self.cd = cd
 		self.cdTimer = 1
+		self.bulletDMG = bulletDMG
 		
 
 		self.rangeDist = range
+		self.rangeShow = True
 
 		
 	def print(self):
@@ -197,7 +308,8 @@ class Tower():
 			for yPos in range(y):
 				if map.dimensions[xPos][yPos][1] == self.type:
 					SCREEN.blit(self.image, (xPos * 50, yPos * 50))
-					pygame.draw.circle(SCREEN, (255, 255, 255), (xPos * 50 + 25, yPos* 50 + 25), self.rangeDist, 2)
+					if self.showRange == True:
+						pygame.draw.circle(SCREEN, (255, 255, 255), (xPos * 50 + 25, yPos* 50 + 25), self.rangeDist, 2)
 					instance = 0
 					for bullet in self.bullets:
 						bullet.print()
@@ -223,17 +335,17 @@ class Tower():
 
 	def bulletCreate(self, enemy):
 		global bulletIMG
-		bullet = Bullet(enemy, self.rect.center, bulletIMG)
+		bullet = Bullet(enemy, self.rect.center, bulletIMG, self.bulletDMG)
 		
 		self.bullets.append(bullet)
 
 
 class Bullet():
-	def __init__(self, enemy, pos, image, x = 0, y = 0):
+	def __init__(self, enemy, pos, image, damage, x = 0, y = 0):
 		self.image = pygame.transform.scale(image, (10, 10))
 		self.rect = self.image.get_rect()
 		self.rect.center = pos 
-		self.damage = 1
+		self.damage = damage
 		self.hit = False
 		self.enemy = enemy
 
@@ -282,7 +394,37 @@ class Tank(Enemy):
 		image = tankIMG
 		super().__init__(image, 'tank', 4, 8)
 
+class Base(Tower):
+	def __init__(self, point):
+		x = point[0]
+		y = point[1]
+		image = baseIMG
+		super().__init__(image, 'base', x * 50, y * 50, 0, 0, 0)
+		self.image = pygame.transform.scale(image, (greenTile.size, greenTile.size))
+		self.showRange = False
 
+	def shoot(self):
+		return
+	
+	def bulletCreate(self):
+		return
+	
+
+class Spawn(Tower):
+	def __init__(self, point):
+		x = point[0]
+		y = point[1]
+		image = spawnIMG
+		super().__init__(image, 'spawn', x, y, 0, 0, 0)
+		self.image = pygame.transform.scale(image, (greenTile.size, greenTile.size))
+		
+		self.showRange = False
+
+	def shoot(self):
+		return
+	
+	def bulletCreate(self):
+		return
 
 		
 	
@@ -298,7 +440,7 @@ count = 0
 order = ['soldier']
 order = ['soldier', 'tank', 'soldier', 'tank', 'soldier', 'tank', 'soldier', 'tank']
 
-def spawn():	
+def spawnEnemy():	
 	global count, order, FPS, enemies
 	if len(order) == 0:
 		return
@@ -322,7 +464,7 @@ def Update():
 		tower.print()
 		tower.shoot()
 		
-	spawn()
+	spawnEnemy()
 	if len(enemies) != 0:
 		instance = 0
 		for enemy in enemies:
@@ -361,6 +503,7 @@ turretIMG = pygame.image.load('assets/images/turret.png').convert_alpha()
 machineGunIMG = pygame.image.load('assets/images/machineGun.png').convert_alpha()
 bulletIMG = pygame.image.load('assets/images/bullet.png').convert_alpha()
 baseIMG = pygame.image.load('assets/images/base.png').convert_alpha()
+spawnIMG = pygame.image.load('assets/images/spawn.png').convert_alpha()
 
 waypoints = [
 	[100, 100], [1500, 100] ,[1500, 200], [100, 200], [ 1500, 900]
@@ -370,12 +513,11 @@ waypoints = [
 
 greenTile = Tile('green', greenIMG)
 brownTile = Tile('brown', brownIMG)
-baseTile = Tile('base', baseIMG)
-
-map = Map()
 
 towers = []
 enemies = []
+
+map = Map()
 
 def tempUpdate():
 	
@@ -393,7 +535,9 @@ while map.created == False:
 	map.create()
 	tempUpdate()
 
-loop = False
+print(map.dimensions)
+
+loop = True
 
 while loop:
 	pygame.display.update()
