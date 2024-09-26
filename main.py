@@ -369,9 +369,8 @@ class Tower():
 					self.cdTimer = self.cd
 					
 		# Decreases cool down timer if not already 0
-		if self.cdTimer != 0 and first == True:
-			self.cdTimer -= 1 
-			first = False
+		if self.cdTimer != 0:
+			self.cdTimer -= 1
 
 
 	def bulletCreate(self, enemy):
@@ -447,7 +446,7 @@ class MachineTurret(Tower):
 		image = machineGunIMG
 
 		# Calls tower class initiation with image, type, mouse position, range, cool down and damage
-		super().__init__(image, 'machine', mx, my, 100, 50, 2)
+		super().__init__(image, 'machine', mx, my, 100, 20, 2)
 
 class Soldier(Enemy):
 	# Uses inheritance of enemy class
@@ -636,6 +635,7 @@ def Update():
 			pygame.quit()
 			# Exits main game loop
 			loop = False
+			return
 		
 		# If user clicks, tower build function cslled
 		elif events.type == pygame.MOUSEBUTTONDOWN:
@@ -689,6 +689,7 @@ def mapCreateUpdate():
 		# Checks for closing window
 		if events.type == pygame.QUIT:
 			pygame.quit()
+			break
 	
 	for tower in towers:
 		tower.print()
@@ -706,8 +707,6 @@ while map.created == False:
 	# Map creation update screen function
 	mapCreateUpdate()
 
-print(map.array)
-print(towers)
 
 # Sets loop to true, forces into main game loop
 loop = True
@@ -715,6 +714,10 @@ loop = True
 while loop:
 	# Calls update function to create, move and print objects to screen
 	Update()
+
+	# As loop is global variable, if window closed, does not try to update, so no error given
+	if loop == False:
+		break
 	# Updates game window
 	pygame.display.update()
 	CLOCK.tick(FPS)
