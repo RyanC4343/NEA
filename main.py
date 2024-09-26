@@ -348,7 +348,7 @@ class Tower():
 							# Removes bullet from bullet array
 							self.bullets.pop(instance)
 						instance += 1
-				return
+				
 	
 	
 	def shoot(self):
@@ -356,6 +356,7 @@ class Tower():
 		for enemy in enemies:
 			x, y = enemy.rect.center
 			x1, y1 = self.rect.center
+
 
 			# Creates equation of circle, with radius of the range
 			if (x - x1) ** 2 + (y - y1) ** 2 <= (self.rangeDist ** 2):
@@ -366,9 +367,11 @@ class Tower():
 
 					# Resets cool down timer
 					self.cdTimer = self.cd
-			# Decreases cool down timer if not already 0
-			if self.cdTimer != 0:
-				self.cdTimer -= 1 
+					
+		# Decreases cool down timer if not already 0
+		if self.cdTimer != 0 and first == True:
+			self.cdTimer -= 1 
+			first = False
 
 
 	def bulletCreate(self, enemy):
@@ -435,7 +438,7 @@ class BasicTurret(Tower):
 		image = turretIMG
 
 		# Calls tower class initiation with image, type, mouse position, range, cool down and damage
-		super().__init__(image, 'turret', mx, my, 150, 100, 10)
+		super().__init__(image, 'turret', mx, my, 150, 200, 4)
 
 class MachineTurret(Tower):
 	# Uses inheritance of tower class
@@ -444,7 +447,7 @@ class MachineTurret(Tower):
 		image = machineGunIMG
 
 		# Calls tower class initiation with image, type, mouse position, range, cool down and damage
-		super().__init__(image, 'machine', mx, my, 100, 20, 2)
+		super().__init__(image, 'machine', mx, my, 100, 50, 2)
 
 class Soldier(Enemy):
 	# Uses inheritance of enemy class
@@ -459,7 +462,7 @@ class Soldier(Enemy):
 		self.image = pygame.transform.scale(image, (20, 20))
 
 		# Sets number of lives for solider
-		self.lives = 4
+		self.lives = 10
 		
 class Tank(Enemy):
 	# Uses inheritance of enemy class
@@ -592,34 +595,58 @@ def spawnEnemy():
 
 # Update function for main game loop
 def Update():
+	# Defines global variables
 	global enemies, instance, loop
+
+	# Prints map
 	map.print()
-		
+
+	# Spawns any enemies	
 	spawnEnemy()
+
+	# Check if number of enemies on screen is 0
 	if len(enemies) != 0:
+
 		instance = 0
+
+		# Checks for each enemy		
 		for enemy in enemies:
+			# If enemy lives <= 0 then deletes enemy
 			if enemy.lives <= 0:
+				# Deletes enemy
 				enemies.pop(instance)
 				return
 			else:
+				# If enemy not out of lives then prints enemy to screen
 				enemy.print()
 			
+			# Updates instance, this is used to delete enemies
 			instance += 1
-		if len(enemies) != 0:
-			if enemies[0].pathEnd == True:
-				enemies.pop(0) #enemy reach base location
 
+		# Check again if length of enemies is 0 - last enemy could have been deleted
+		if len(enemies) != 0:
+			# Checks if enemy reached end of path
+			if enemies[0].pathEnd == True:
+				# Deletes enemy
+				enemies.pop(0)
+
+	# Checks for closing window
 	for events in pygame.event.get():
 		if events.type == pygame.QUIT:
 			pygame.quit()
+			# Exits main game loop
 			loop = False
-			
+		
+		# If user clicks, tower build function cslled
 		elif events.type == pygame.MOUSEBUTTONDOWN:
 			build()		
 	
+	# For each tower in list of towers
 	for tower in towers:
+		# Prints tower
 		tower.print()
+
+		# Checks if needs to shoot
 		tower.shoot()
 
 	#print(CLOCK.get_fps())
@@ -628,7 +655,7 @@ def Update():
 
 	
 
-#load image
+# Load images
 soldierIMG = pygame.image.load('assets/images/soldier.png').convert_alpha()
 tankIMG = pygame.image.load('assets/images/tank.png').convert_alpha()
 greenIMG = pygame.image.load('assets/images/greenSq.png').convert_alpha()
@@ -639,41 +666,57 @@ bulletIMG = pygame.image.load('assets/images/bullet.png').convert_alpha()
 baseIMG = pygame.image.load('assets/images/base.png').convert_alpha()
 spawnIMG = pygame.image.load('assets/images/spawn.png').convert_alpha()
 
-waypoints = [
-	[100, 100], [1500, 100] ,[1500, 200], [100, 200], [ 1500, 900]
-]
 
-#create instance of class
-
+# Create instances of tile class
 greenTile = Tile('green', greenIMG)
 brownTile = Tile('brown', brownIMG)
 
+# Create blank lists for towers and enemies to be stored in
 towers = []
 enemies = []
 
+# Creates map
 map = Map()
 
-def tempUpdate():
+# Update function to be used when creating map
+def mapCreateUpdate():
 	
+	# Prints map
 	map.print()
+
+	# Checks for events
 	for events in pygame.event.get():
+		# Checks for closing window
 		if events.type == pygame.QUIT:
 			pygame.quit()
 	
+	for tower in towers:
+		tower.print()
+
+
+	# Updates display at normal FPS
 	pygame.display.update()
 	CLOCK.tick(FPS)
 
+# Map creation game loop
 while map.created == False:
+	# Calls map creation function
 	map.create()
-	tempUpdate()
+
+	# Map creation update screen function
+	mapCreateUpdate()
 
 print(map.array)
+print(towers)
 
+# Sets loop to true, forces into main game loop
 loop = True
 
 while loop:
-	pygame.display.update()
+	# Calls update function to create, move and print objects to screen
 	Update()
+	# Updates game window
+	pygame.display.update()
 	CLOCK.tick(FPS)
 	
   
