@@ -1,4 +1,4 @@
-import pygame
+import pygame, time
 
 # Initialise pygame
 pygame.init()
@@ -17,71 +17,30 @@ pygame.display.set_caption('Td')
 # Define clock
 CLOCK = pygame.time.Clock()
 
-class Enemy():
-	# Init function
-	def __init__(self, image, type, speedA, speedB):
-		# Declare variables and set image size to 40x40 pixels
-		self.image = pygame.transform.scale(image, (40,40))
-		self.rect = self.image.get_rect()
-		# 2 speeds for control of enemy pace
-		self.speedA = speedA 
-		self.speedB = speedB
-		self.pathEnd = False
-		self.type = type
-		self.point = 0
+class Player():
+	def __init__(self):
+		self.__score = 0
+		self.__lives = 5
 
-		self.lives = 5
+	def lifeLoss(self):
+		# Decreases player life
+		self.__lives -= 1
+		# Check if now have 0 lives
+		if self.__lives == 0:
+			# Calls game over function
+			self.gameOver()
 
-		# Uses waypoints from map creation for enemy path
-		self.waypoints = map.waypoints 
-		self.rect.center = self.waypoints[0]
-		# Appends self to object array so it can be called and printed in one function
-		enemies.append(self)
+	def gameOver(self):
+		pass
 
-	# Print function for the enemy class
-	def print(self):
-		# Calls the move function to calculate enemy movement
-		self.move() 
+	def scoreInc(self, points):
+		# Takes points to increase score by as parameter, increases score
+		self.__score += points
 
-		# Prints instance to screen
-		SCREEN.blit(self.image, (self.rect.x, self.rect.y)) 
-		
-	def move(self):
-		
-		if self.point == len(self.waypoints):			
-			# If enemy reaches end of path, set path end to True and return to exit the function
-			self.pathEnd = True
-			return
+	def getScore(self):
+		return self.__score
 
-		# Takes waypoint positions of next location
-		wpx = self.waypoints[self.point][0]
-		wpy = self.waypoints[self.point][1]
 
-		# Calculates distance between current position and waypoint location
-		disX = wpx - self.rect.centerx
-		disY = wpy - self.rect.centery
-		
-		# Finds total distance: abs() - gives magnitude of number
-		disT = abs(disX) + abs(disY) 
-		
-		#if = 0, enemy at waypoint, need to move to next waypoint
-		if disT <= 4:
-			# Moves onto next waypoint
-			self.point += 1
-			return
-		
-
-		# Updates the rect positions - then displayed to screen in the print function
-		self.rect.centerx += ((disX * self.speedB / disT) / self.speedA ) // 1
-		self.rect.centery += ((disY * self.speedB / disT) / self.speedA) // 1
-
-		
-class Tile():
-	def __init__(self, type, image):
-		self.size = 50
-		# Transforms image size to 50x50
-		self.image = pygame.transform.scale(image, (50, 50))
-		self.type = type
 
 class Map():
 	def __init__(self):
@@ -113,8 +72,6 @@ class Map():
 			self.array.append(array2) 
 			# Resets array2
 			array2 = [] 
-
-			
 			
 
 	'''
@@ -161,6 +118,7 @@ class Map():
 						# Sets first click to false
 						firstClick = False
 
+
 					# Check for left click: add point
 					elif event.button == 1:
 						# Alter tile type to enemy path
@@ -170,7 +128,7 @@ class Map():
 							prevPoint = [x, y]
 
 					# Check for right click: add base
-					elif event.button == 3:
+					elif event.button == 3 and not firstClick:
 						# Alter tile to base to defend
 						self.addBase(prevPoint, [x, y]) 
 						
@@ -293,7 +251,76 @@ class Map():
 				elif self.array[xPos][yPos][0] == 'brown':
 					SCREEN.blit(brownTile.image, (xPos * 50, yPos * 50))
 
-			
+
+class Enemy():
+	# Init function
+	def __init__(self, image, type, speedA, speedB):
+		# Declare variables and set image size to 40x40 pixels
+		self.image = pygame.transform.scale(image, (40,40))
+		self.rect = self.image.get_rect()
+		# 2 speeds for control of enemy pace
+		self.speedA = speedA 
+		self.speedB = speedB
+		self.pathEnd = False
+		self.type = type
+		self.point = 0
+
+		self.lives = 5
+
+		# Uses waypoints from map creation for enemy path
+		self.waypoints = map.waypoints 
+		self.rect.center = self.waypoints[0]
+		# Appends self to object array so it can be called and printed in one function
+		enemies.append(self)
+
+	# Print function for the enemy class
+	def print(self):
+		# Calls the move function to calculate enemy movement
+		self.move() 
+
+		# Prints instance to screen
+		SCREEN.blit(self.image, (self.rect.x, self.rect.y)) 
+		
+	def move(self):
+		
+		if self.point == len(self.waypoints):			
+			# If enemy reaches end of path, set path end to True and return to exit the function
+			self.pathEnd = True
+			# Call life loss function to decrease player lives
+			player.lifeLoss()
+			return
+
+		# Takes waypoint positions of next location
+		wpx = self.waypoints[self.point][0]
+		wpy = self.waypoints[self.point][1]
+
+		# Calculates distance between current position and waypoint location
+		disX = wpx - self.rect.centerx
+		disY = wpy - self.rect.centery
+		
+		# Finds total distance: abs() - gives magnitude of number
+		disT = abs(disX) + abs(disY) 
+		
+		#if = 0, enemy at waypoint, need to move to next waypoint
+		if disT <= 4:
+			# Moves onto next waypoint
+			self.point += 1
+			return
+		
+
+		# Updates the rect positions - then displayed to screen in the print function
+		self.rect.centerx += ((disX * self.speedB / disT) / self.speedA ) // 1
+		self.rect.centery += ((disY * self.speedB / disT) / self.speedA) // 1
+
+		
+class Tile():
+	def __init__(self, type, image):
+		self.size = 50
+		# Transforms image size to 50x50
+		self.image = pygame.transform.scale(image, (50, 50))
+		self.type = type
+
+
 class Tower():
 	# Initialise tower class
 	def __init__(self, image, type, mx, my, range, cd, bulletDMG):
@@ -462,6 +489,9 @@ class Soldier(Enemy):
 
 		# Sets number of lives for solider
 		self.lives = 10
+
+		# Sets score worth for enemy
+		self.score = 10		
 		
 class Tank(Enemy):
 	# Uses inheritance of enemy class
@@ -473,7 +503,10 @@ class Tank(Enemy):
 		super().__init__(image, 'tank', 4, 8)
 
 		# Sets number of lives for tank		
-		self.lives = 10
+		self.lives = 20
+
+		# Sets score worth for enemy
+		self.score = 25
 
 
 # User base acts as a tower, has similar attributes - hence can use inheritance
@@ -600,6 +633,9 @@ def Update():
 	# Prints map
 	map.print()
 
+	# Outputs player score
+	print(player.getScore())
+
 	# Spawns any enemies	
 	spawnEnemy()
 
@@ -612,6 +648,9 @@ def Update():
 		for enemy in enemies:
 			# If enemy lives <= 0 then deletes enemy
 			if enemy.lives <= 0:
+				# Increase score by amount for enemy
+				player.scoreInc(enemy.score)
+
 				# Deletes enemy
 				enemies.pop(instance)
 				return
@@ -637,7 +676,7 @@ def Update():
 			loop = False
 			return
 		
-		# If user clicks, tower build function cslled
+		# If user clicks, tower build function called
 		elif events.type == pygame.MOUSEBUTTONDOWN:
 			build()		
 	
@@ -677,6 +716,9 @@ enemies = []
 
 # Creates map
 map = Map()
+
+# Create instance of player class
+player = Player()
 
 # Update function to be used when creating map
 def mapCreateUpdate():
