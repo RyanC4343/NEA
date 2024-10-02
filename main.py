@@ -223,6 +223,12 @@ class Map():
 	def addBase(self, prevPoint, currPoint):
 		# Checks if point is valid
 		accepted = self.addpoint(prevPoint, currPoint)
+		
+		# Checks if last clicked tile is same as clicked tile
+		if prevPoint[0] // 50 == currPoint[0] // 50 and prevPoint[1] // 50 == currPoint[1] // 50:
+			# Changes accepted to true
+			accepted = True
+
 		if accepted:
 			# If valid then creates base
 			base = Base(currPoint)
@@ -264,7 +270,6 @@ class Enemy():
 		self.imageOriginal = pygame.transform.scale(image, (40,40))
 		self.image = pygame.transform.scale(image, (40,40))
 		self.rect = self.image.get_rect()
-		self.rect = self.image.get_rect()
 		# 2 speeds for control of enemy pace
 		self.speedA = speedA 
 		self.speedB = speedB
@@ -274,11 +279,14 @@ class Enemy():
 		self.rotate = 0
 		self.lives = 5
 
+
 		# Uses waypoints from map creation for enemy path
 		self.waypoints = map.waypoints 
 		self.rect.center = self.waypoints[0]
 		# Appends self to object array so it can be called and printed in one function
 		enemies.append(self)
+
+		self.rect.center = (self.waypoints[0])
 
 	# Print function for the enemy class
 	def print(self):
@@ -296,7 +304,6 @@ class Enemy():
 			self.pathEnd = True
 			# Call life loss function to decrease player lives
 			player.lifeLoss()
-			print(player.getLives())
 			# Change pointer to null
 			self.point = -1
 
@@ -635,16 +642,30 @@ def build():
 
 	# Get user input
 	userInput = pygame.key.get_pressed()
-	
-	# Check if 1 key pressed
-	if userInput[pygame.K_1]:
-		# Creates basic turret
-		tower = BasicTurret(mx, my)
 
-	# Checks if 2 key pressed
-	elif userInput[pygame.K_2]:
-		# Creates machine gun
-		tower = MachineTurret(mx, my)
+	# Check tile is free
+	if checkTile(mx, my):
+		# Check if 1 key pressed
+		if userInput[pygame.K_1]:
+			# Creates basic turret
+			tower = BasicTurret(mx, my)
+
+		# Checks if 2 key pressed
+		elif userInput[pygame.K_2]:
+			# Creates machine gun
+			tower = MachineTurret(mx, my)
+
+# Check tile is free
+def checkTile(mx, my):
+	# Get tile coords on grid
+	x = mx // 50
+	y = my // 50
+	# Check tile is green and has no tile built
+	if map.array[x][y][0] == 'green' and map.array[x][y][1] == 'free':
+		# Returns true if condition met
+		return True
+	else: 
+		return False
 
 # Count acts as delay for spawning enemies
 count = 0
@@ -823,6 +844,12 @@ def mapCreateUpdate():
 	# Updates display at normal FPS
 	pygame.display.update()
 	CLOCK.tick(FPS)
+
+
+# Gives user info about basic functions
+print("""To place enemy spawn: left click on chosen tile
+To create path: left click on tile with same x OR y coord as previous tile
+To place your base: right click on either green tile or last clicked tile""")
 
 # Map creation game loop
 while map.created == False:
