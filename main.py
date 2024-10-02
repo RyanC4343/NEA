@@ -20,7 +20,7 @@ CLOCK = pygame.time.Clock()
 class Player():
 	def __init__(self):
 		self.__score = 0
-		self.__lives = 5
+		self.__lives = 8
 
 	def lifeLoss(self):
 		# Decreases player life
@@ -39,6 +39,9 @@ class Player():
 
 	def getScore(self):
 		return self.__score
+	
+	def getLives(self):
+		return player.__lives
 
 
 
@@ -256,7 +259,10 @@ class Enemy():
 	# Init function
 	def __init__(self, image, type, speedA, speedB):
 		# Declare variables and set image size to 40x40 pixels
+		# Include original copy of image so can be used for rotation
+		self.imageOriginal = pygame.transform.scale(image, (40,40))
 		self.image = pygame.transform.scale(image, (40,40))
+		self.rect = self.image.get_rect()
 		self.rect = self.image.get_rect()
 		# 2 speeds for control of enemy pace
 		self.speedA = speedA 
@@ -264,7 +270,7 @@ class Enemy():
 		self.pathEnd = False
 		self.type = type
 		self.point = 0
-
+		self.rotate = 0
 		self.lives = 5
 
 		# Uses waypoints from map creation for enemy path
@@ -283,11 +289,15 @@ class Enemy():
 		
 	def move(self):
 		
-		if self.point == len(self.waypoints):			
+		if self.point == len(self.waypoints) or self.point == -1:	
 			# If enemy reaches end of path, set path end to True and return to exit the function
 			self.pathEnd = True
 			# Call life loss function to decrease player lives
 			player.lifeLoss()
+			print(player.getLives())
+			# Change pointer to null
+			self.point = -1
+
 			return
 
 		# Takes waypoint positions of next location
@@ -302,15 +312,59 @@ class Enemy():
 		disT = abs(disX) + abs(disY) 
 		
 		#if = 0, enemy at waypoint, need to move to next waypoint
-		if disT <= 4:
+		if disT <= 1 and self.point != len(self.waypoints):
+			self.rect.center = self.waypoints[self.point]
 			# Moves onto next waypoint
 			self.point += 1
+
+			# As just increased pointer, need to check if point is at that location
+			if self.point == len(self.waypoints):
+				# If not, change point to null, and exit function
+				self.point = -1				
+				return
+			
+			# Takes waypoint positions of next location
+			wpx = self.waypoints[self.point][0]
+			wpy = self.waypoints[self.point][1]
+
+			# Calculates distance between current position and waypoint location
+			disX = wpx - self.rect.centerx
+			disY = wpy - self.rect.centery
+
+			# Change direction of enemy sprite facing
+			self.getDirection(disX, disY)
+
 			return
-		
+
+
 
 		# Updates the rect positions - then displayed to screen in the print function
 		self.rect.centerx += ((disX * self.speedB / disT) / self.speedA ) // 1
 		self.rect.centery += ((disY * self.speedB / disT) / self.speedA) // 1
+
+	def getDirection(self, changeY, changeX):
+		'''
+		To change direction of enemy facing
+		Find which of x or y coord is changing
+		find which way changing
+		Now I want to rotate so it is facing North, South, East or West
+		
+		'''
+		
+		if changeY > 0:
+			self.rotate = -90
+
+		elif changeY < 0:
+			self.rotate = 90
+
+		elif changeX > 0:
+			self.rotate = 180
+		
+		elif changeX < 0:
+			self.rotate = 0
+
+		self.image = pygame.transform.rotate(self.imageOriginal, self.rotate)
+		self.image = pygame.transform.scale(self.image, (self.size, self.size))
 
 		
 class Tile():
@@ -475,6 +529,7 @@ class MachineTurret(Tower):
 		# Calls tower class initiation with image, type, mouse position, range, cool down and damage
 		super().__init__(image, 'machine', mx, my, 100, 20, 2)
 
+
 class Soldier(Enemy):
 	# Uses inheritance of enemy class
 	def __init__(self):
@@ -486,6 +541,9 @@ class Soldier(Enemy):
 
 		# Changes image size to smaller, as default is 40x40 pixels
 		self.image = pygame.transform.scale(image, (20, 20))
+
+		# Define enemy dimensions for use in rotation function
+		self.size = 20
 
 		# Sets number of lives for solider
 		self.lives = 10
@@ -501,6 +559,9 @@ class Tank(Enemy):
 
 		# Calls enemy class initiation with image, type, and walk speed
 		super().__init__(image, 'tank', 4, 8)
+
+		# Define enemy dimensions for use in rotation function
+		self.size = 40
 
 		# Sets number of lives for tank		
 		self.lives = 20
@@ -588,6 +649,7 @@ count = 0
 
 # List of enemies to be created
 order = ['soldier', 'tank', 'soldier', 'tank', 'soldier', 'tank', 'soldier', 'tank']
+#order = ['tank']
 
 
 # Enemy spawn function
@@ -634,7 +696,7 @@ def Update():
 	map.print()
 
 	# Outputs player score
-	print(player.getScore())
+	#print(player.getScore())
 
 	# Spawns any enemies	
 	spawnEnemy()
@@ -663,10 +725,15 @@ def Update():
 
 		# Check again if length of enemies is 0 - last enemy could have been deleted
 		if len(enemies) != 0:
+			# Defaults instance to 0, so can be used for popping enemies
+			instance = 0
 			# Checks if enemy reached end of path
-			if enemies[0].pathEnd == True:
-				# Deletes enemy
-				enemies.pop(0)
+			for enemy in enemies:
+				if enemy.pathEnd == True:
+					# Deletes enemy at instance location
+					enemies.pop(instance)
+					# Increment instance
+					instance += 1
 
 	# Checks for closing window
 	for events in pygame.event.get():
