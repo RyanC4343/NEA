@@ -3,11 +3,12 @@ import pygame, time
 # Initialise pygame
 pygame.init()
 
-# Define variables
+# Define constants
 SCREENWIDTH = 1600
 SCREENHEIGHT = 1000
 SCREENSIZE = [SCREENWIDTH, SCREENHEIGHT]
 FPS = 60
+font = pygame.font.Font('freesansbold.ttf', 32)
 
 # Create screen
 
@@ -289,6 +290,7 @@ class Enemy():
 		
 	def move(self):
 		
+		# Checks if point is pointing to item outside of list, or if pointer is null
 		if self.point == len(self.waypoints) or self.point == -1:	
 			# If enemy reaches end of path, set path end to True and return to exit the function
 			self.pathEnd = True
@@ -311,15 +313,15 @@ class Enemy():
 		# Finds total distance: abs() - gives magnitude of number
 		disT = abs(disX) + abs(disY) 
 		
-		#if = 0, enemy at waypoint, need to move to next waypoint
-		if disT <= 1 and self.point != len(self.waypoints):
+		#if < 1, enemy at waypoint, need to move to next waypoint
+		if disT <= 1:
 			self.rect.center = self.waypoints[self.point]
 			# Moves onto next waypoint
 			self.point += 1
 
 			# As just increased pointer, need to check if point is at that location
 			if self.point == len(self.waypoints):
-				# If not, change point to null, and exit function
+				# Change pointer to null and return, this exits function
 				self.point = -1				
 				return
 			
@@ -687,6 +689,20 @@ def spawnEnemy():
 		count = 0
 
 
+def displayLiveStats():
+	livesText = font.render('Lives: '+str(player.getLives()), True, 'black')
+	livesTextrect = livesText.get_rect()
+	livesTextrect.topleft = (SCREENWIDTH * 0.9, 30)
+	SCREEN.blit(livesText, livesTextrect)
+
+	scoreText = font.render('Score: '+str(player.getScore()), True, 'black')
+	scoreTextrect = livesText.get_rect()
+	scoreTextrect.topleft = (SCREENWIDTH * 0.02, 30)
+	SCREEN.blit(scoreText, scoreTextrect)
+
+
+
+
 # Update function for main game loop
 def Update():
 	# Defines global variables
@@ -695,8 +711,8 @@ def Update():
 	# Prints map
 	map.print()
 
-	# Outputs player score
-	#print(player.getScore())
+	# Outputs player stats - score, lives
+	displayLiveStats()
 
 	# Spawns any enemies	
 	spawnEnemy()
@@ -733,7 +749,7 @@ def Update():
 					# Deletes enemy at instance location
 					enemies.pop(instance)
 					# Increment instance
-					instance += 1
+				instance += 1
 
 	# Checks for closing window
 	for events in pygame.event.get():
