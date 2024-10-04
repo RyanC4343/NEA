@@ -225,7 +225,7 @@ class Map():
 		accepted = self.addpoint(prevPoint, currPoint)
 		
 		# Checks if last clicked tile is same as clicked tile
-		if prevPoint[0] // 50 == currPoint[0] // 50 and prevPoint[1] // 50 == currPoint[1] // 50:
+		if prevPoint[0] == currPoint[0] and prevPoint[1] == currPoint[1]:
 			# Changes accepted to true
 			accepted = True
 
@@ -549,7 +549,8 @@ class Soldier(Enemy):
 		super().__init__(image, 'soldier', 2, 6)
 
 		# Changes image size to smaller, as default is 40x40 pixels
-		self.image = pygame.transform.scale(image, (20, 20))
+		self.image = pygame.transform.scale(image, (10, 20))
+		self.imageOriginal = pygame.transform.scale(image, (10,20))
 
 		# Define enemy dimensions for use in rotation function
 		self.size = 20
