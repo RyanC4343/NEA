@@ -271,7 +271,7 @@ class Enemy():
 		self.image = pygame.transform.scale(image, (40,40))
 		self.rect = self.image.get_rect()
 		# 2 speeds for control of enemy pace
-		self.speedA = speedA 
+		self.speedA = speedA
 		self.speedB = speedB
 		self.pathEnd = False
 		self.type = type
@@ -797,7 +797,33 @@ def Update():
 	#os.system('cls')
 
 
+
+# Function to load leaderboard file
+def loadLeaderboard():
+	LBFile = open("leaderboard.txt","r")
+	text = eval(LBFile.read())
+	LBScores = []
+	LBFile.close()
+	for x in text:
+		LBScores.append(x)
+	return LBScores
+
+
+# Procedure to save leaderboard file
+def saveLeaderboard():
+	pass
+
+# Function to display leaderboard
+def displayLeaderboard(LBScores):
+	for pos in range(len(LBScores)):
+		current = font.render(str(LBScores[pos]), True, "blue")
+		SCREEN.blit(current, (450, 100 + 22 * (pos + 0.2)))
+
+	pygame.display.update()
+	CLOCK.tick(FPS)
+
 	
+
 
 # Load images
 soldierIMG = pygame.image.load('assets/images/soldier.png').convert_alpha()
@@ -825,6 +851,9 @@ map = Map()
 # Create instance of player class
 player = Player()
 
+# Load scores from leaderboard file
+LBScores = loadLeaderboard()
+
 # Update function to be used when creating map
 def mapCreateUpdate():
 	
@@ -845,6 +874,11 @@ def mapCreateUpdate():
 	# Updates display at normal FPS
 	pygame.display.update()
 	CLOCK.tick(FPS)
+
+
+# Check leaderboard functions work as intended
+while True:
+	displayLeaderboard(LBScores)
 
 
 # Gives user info about basic functions
