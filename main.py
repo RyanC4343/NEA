@@ -793,36 +793,105 @@ def Update():
 		# Checks if needs to shoot
 		tower.shoot()
 
-	#print(CLOCK.get_fps())
-	#os.system('cls')
-
 
 
 # Function to load leaderboard file
 def loadLeaderboard():
+
+	# Opens and reads leaderboard file
 	LBFile = open("leaderboard.txt","r")
 	text = eval(LBFile.read())
 	LBScores = []
 	LBFile.close()
+	# Appends items in file to list
 	for x in text:
 		LBScores.append(x)
+	# Returns list
 	return LBScores
-
+ 
 
 # Procedure to save leaderboard file
 def saveLeaderboard():
-	pass
+	# score = player.getScore() - COMMENT OUT FOR TESTING
+
+	# Set score to any number for testing purposes
+	score = 800
+
+	# Calls function to load leaderboard
+	LBScores = loadLeaderboard()
+
+	# Loop through from lowest score in scores to highest
+	for x in range(len(LBScores) - 1, -1, -1):
+		# Checks if user score is less than score in list
+		if LBScores[x] > score or x == 0:
+
+			# Check for first case - user score is higher than all items in file
+			if LBScores[0] < score:
+				# Saves items in list to temp variable
+				temp = LBScores
+				# Set first item in list to user score
+				LBScores = [score]
+
+				# Appends items in temp variable to list
+				for t in temp:
+					LBScores.append(t)
+				saveLBFile(LBScores)
+				return
+
+			# Takes variables for front and back of list - for resaving
+			back = LBScores[x + 1:]
+			front = LBScores[:x + 1]
+			# Resets scores list
+			LBScores = []
+
+			# Appends front, score and back of the list in order, this works like an insertion sort
+			for Q in front:
+				LBScores.append(Q)
+			LBScores.append(score)
+			for Q in back:
+				LBScores.append(Q)
+			
+			# If any items in the new list are blank, need removing
+
+			# Define index start point
+			index = 0
+
+			# Loop through all items in list
+			for pos in range(len(LBScores)):
+				# Casts item at position as string, then checks if is digit, this ensures any items are numbers, rather than blank or the wrong data type
+				if str(LBScores[index]).isdigit() == False:
+					# Removes item from list
+					LBScores.pop(index)
+
+					# As all items in list would shift places, decrease index to compensate
+					index -= 1
+
+				# Increase index to look at next item in list
+				index += 1
+			
+			saveLBFile(LBScores)
+			return
+		
+def saveLBFile(LBScores):
+	# Opens file in write mode
+	LBFile = open('leaderboard.txt', 'w')
+	# Writes top 5 scores in list to file
+	LBFile.write(str(LBScores[:6]))
+
+	# Closes file
+	LBFile.close()
 
 # Function to display leaderboard
 def displayLeaderboard(LBScores):
+	# Takes item in LBScores
 	for pos in range(len(LBScores)):
+		# Gets text for item in list then renders the text
 		current = font.render(str(LBScores[pos]), True, "blue")
-		SCREEN.blit(current, (450, 100 + 22 * (pos + 0.2)))
+		
+		# Blits items to screen
+		SCREEN.blit(current, (450, 100 + 22 * (pos + 0.8)))
 
-	pygame.display.update()
-	CLOCK.tick(FPS)
 
-	
 
 
 # Load images
@@ -851,8 +920,8 @@ map = Map()
 # Create instance of player class
 player = Player()
 
-# Load scores from leaderboard file
-LBScores = loadLeaderboard()
+# Call leaderboard save to test procedure
+saveLeaderboard()
 
 # Update function to be used when creating map
 def mapCreateUpdate():
@@ -865,8 +934,8 @@ def mapCreateUpdate():
 		# Checks for closing window
 		if events.type == pygame.QUIT:
 			pygame.quit()
-			break
-	
+			return
+
 	for tower in towers:
 		tower.print()
 
@@ -875,10 +944,6 @@ def mapCreateUpdate():
 	pygame.display.update()
 	CLOCK.tick(FPS)
 
-
-# Check leaderboard functions work as intended
-while True:
-	displayLeaderboard(LBScores)
 
 
 # Gives user info about basic functions
