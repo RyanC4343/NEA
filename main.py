@@ -56,7 +56,7 @@ class Map():
 		self.created = False
 		self.waypoints = []
 
-		# Creates blank map array
+		# Creates blank array
 		self.array = [] 
 		
 		# Creates blank arrays needed for creation of 3D array
@@ -353,7 +353,7 @@ class Enemy():
 
 	def getDirection(self, changeY, changeX):
 		'''
-		To change direction of enemy facing
+		To change direction on enemy facing
 		Find which of x or y coord is changing
 		find which way changing
 		Now I want to rotate so it is facing North, South, East or West
@@ -726,7 +726,7 @@ def displayLiveStats():
 
 
 # Update function for main game loop
-def Update():
+def gameUpdate():
 	# Defines global variables
 	global enemies, instance, loop
 
@@ -959,34 +959,94 @@ def mapCreateUpdate():
 	pygame.display.update()
 	CLOCK.tick(FPS)
 
-
-
-# Gives user info about basic functions
-print("""To place enemy spawn: left click on chosen tile
+# All of map creation within 1 singular procedure
+def mapCreate():
+	# Gives user info about basic functions
+	print("""
+To place enemy spawn: left click on chosen tile
 To create path: left click on tile with same x OR y coord as previous tile
 To place your base: right click on either green tile or last clicked tile""")
 
-# Map creation game loop
-while map.created == False:
-	# Calls map creation function
-	map.create()
+	# Map creation game loop
+	while map.created == False:
+		# Calls map creation function
+		map.create()
 
-	# Map creation update screen function
-	mapCreateUpdate()
+		# Map creation update screen function
+		mapCreateUpdate()
+
+# All of main game loop in 1 function
+def gameLoop():
+	# Sets loop to true, forces into main game loop
+	loop = True
+
+	while loop:
+		# Calls update function to create, move and print objects to screen
+		gameUpdate()
+
+		# As loop is global variable, if window closed, does not try to update, so no error given
+		if loop == False:
+			break
+		# Updates game window
+		pygame.display.update()
+		CLOCK.tick(FPS)
+		
+# Create button class
+class Button():
+	# Define init case
+	def __init__(self, x, y, height, width, text, colour):
+		
+		self.colour = colour
+		
+		# Render text parameter for button as text
+		self.text = font.render(text, True, 'white')
+
+		# Scale text to fit into button dimensions
+		self.text = pygame.transform.scale(self.text, (height - 2, width - 4))
+
+		# Get rect for text
+		self.textrect = self.text.get_rect()
+		self.textrect.center = (x, y)
 
 
-# Sets loop to true, forces into main game loop
-loop = True
+		# Create button rect
+		self.rect = pygame.Rect(0, 0, height, width)
+		self.rect.center = (x, y)
 
-while loop:
-	# Calls update function to create, move and print objects to screen
-	Update()
+	# Create print function for class
+	def print(self):
+		# Check for mouse hover
+		if self.rect.collidepoint(pygame.mouse.get_pos()):
+			# Change button colour
+			self.colourChange('green')
+		else:
+			# Otherwise default button colour
+			self.colourChange('blue')
 
-	# As loop is global variable, if window closed, does not try to update, so no error given
-	if loop == False:
-		break
-	# Updates game window
+		# Draw button rect with colour
+		pygame.draw.rect(SCREEN, self.colour, self.rect)
+		# Output text
+		SCREEN.blit(self.text, self.textrect)
+
+
+	# Button colour change
+	def colourChange(self, new):
+		self.colour  = new
+
+# Create test button
+test = Button(200, 200, 30, 40, 'hello', 'blue')
+
+# Game loop for testing
+run = True
+while run:
+
+	SCREEN.fill('white')
+	test.print()
 	pygame.display.update()
-	CLOCK.tick(FPS)
-	
-  
+	 
+	# Check for quit
+	for event in pygame.event.get():	
+		if event.type == pygame.QUIT:
+			pygame.quit()
+			run = False
+			
