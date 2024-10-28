@@ -815,7 +815,7 @@ def saveLeaderboard():
 	# score = player.getScore() - COMMENT OUT FOR TESTING
 
 	# Set score to any number for testing purposes
-	score = 800
+	score = 3000
 
 	# Calls function to load leaderboard
 	LBScores = loadLeaderboard()
@@ -858,8 +858,23 @@ def saveLeaderboard():
 
 			# Loop through all items in list
 			for pos in range(len(LBScores)):
-				# Casts item at position as string, then checks if is digit, this ensures any items are numbers, rather than blank or the wrong data type
-				if str(LBScores[index]).isdigit() == False:
+
+				'''
+				Try except loop
+				Attempts code in try statement
+				If works with no error then moves on
+				If causes error then runs except statement
+				
+				In this case:
+				If data at position is a digit, moves on
+				If not, then deletes from LBScores
+				'''
+
+				try:
+					if str(LBScores[index]).isdigit():
+						pass
+
+				except:
 					# Removes item from list
 					LBScores.pop(index)
 
