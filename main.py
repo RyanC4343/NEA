@@ -898,14 +898,19 @@ def saveLBFile(LBScores):
 	LBFile.close()
 
 # Function to display leaderboard
-def displayLeaderboard(LBScores):
+def displayLeaderboard(x, y):
+	LBScores = loadLeaderboard()
+
+	text = font.render('All time leaderboard', True, "blue")
+	SCREEN.blit(text, (x, y))
+
 	# Takes item in LBScores
 	for pos in range(len(LBScores)):
 		# Gets text for item in list then renders the text
 		current = font.render(str(LBScores[pos]), True, "blue")
 		
 		# Blits items to screen
-		SCREEN.blit(current, (450, 100 + 22 * (pos + 0.8)))
+		SCREEN.blit(current, (x, y + 10 + (40 * (pos + 0.8))))
 
 
 
@@ -1035,7 +1040,7 @@ class Button():
 
 	# Button colour change
 	def colourChange(self, new):
-		self.colour  = new#
+		self.colour  = new
 
 	def press(self):
 		pass
@@ -1045,7 +1050,7 @@ test = Button(200, 200, 30, 40, 'hello', 'blue')
 
 class createMapButton(Button):
 	def __init__(self):
-		super().__init__(400, 500, 200, 150, 'Create map', 'black')
+		super().__init__(800, 320, 200, 140, 'Create map', 'black')
 	
 	def press(self):
 		player.state = 'mapCreate'
@@ -1053,21 +1058,35 @@ class createMapButton(Button):
 
 class playMapButton(Button):
 	def __init__(self):
-		super().__init__(200, 800, 200, 150, 'Play map', 'black')
+		super().__init__(800, 470, 200, 140, 'Play map', 'black')
 	
 	def press(self):
 		player.state = 'playMap'
+	
+class RCTDButton(Button):
+	def __init__(self):
+		super().__init__(800, 120, 400, 200, 'RC - TD', 'black')
 
-mainMenu = [createMapButton(), playMapButton()]
+	def press(self):
+		player.state = 'menu'
+
+mainMenu = [createMapButton(), playMapButton(), RCTDButton()]
+
+def displayMenu():
+	for button in mainMenu:
+		button.print()
+	
+	displayLeaderboard(150, 250)
 
 # Game loop for testing
 run = True
 while run:
 
 	SCREEN.fill('white')
+	if map.created:
+		map.print()
 	
-	for button in mainMenu:
-		button.print()
+	displayMenu()
 
 	
 
