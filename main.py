@@ -22,6 +22,7 @@ class Player():
 	def __init__(self):
 		self.__score = 0
 		self.__lives = 8
+		self.state = 'menu'
 
 	def lifeLoss(self):
 		# Decreases player life
@@ -974,6 +975,8 @@ To place your base: right click on either green tile or last clicked tile""")
 
 		# Map creation update screen function
 		mapCreateUpdate()
+		pygame.display.update()
+		time.sleep(2)
 
 # All of main game loop in 1 function
 def gameLoop():
@@ -997,6 +1000,7 @@ class Button():
 	def __init__(self, x, y, height, width, text, colour):
 		
 		self.colour = colour
+		self.col = colour
 		
 		# Render text parameter for button as text
 		self.text = font.render(text, True, 'white')
@@ -1021,7 +1025,7 @@ class Button():
 			self.colourChange('green')
 		else:
 			# Otherwise default button colour
-			self.colourChange('blue')
+			self.colourChange(self.col)
 
 		# Draw button rect with colour
 		pygame.draw.rect(SCREEN, self.colour, self.rect)
@@ -1031,17 +1035,53 @@ class Button():
 
 	# Button colour change
 	def colourChange(self, new):
-		self.colour  = new
+		self.colour  = new#
+
+	def press(self):
+		pass
 
 # Create test button
 test = Button(200, 200, 30, 40, 'hello', 'blue')
+
+class createMapButton(Button):
+	def __init__(self):
+		super().__init__(400, 500, 200, 150, 'Create map', 'black')
+	
+	def press(self):
+		player.state = 'mapCreate'
+
+
+class playMapButton(Button):
+	def __init__(self):
+		super().__init__(200, 800, 200, 150, 'Play map', 'black')
+	
+	def press(self):
+		player.state = 'playMap'
+
+mainMenu = [createMapButton(), playMapButton()]
 
 # Game loop for testing
 run = True
 while run:
 
 	SCREEN.fill('white')
-	test.print()
+	
+	for button in mainMenu:
+		button.print()
+
+	
+
+	if player.state == 'mapCreate':
+		mapCreate()
+
+	elif player.state == 'playMap' and map.created:
+		gameLoop()
+
+	elif player.state == 'playMap':
+		print('Must create map first')
+
+	player.state = 'menu'
+	
 	pygame.display.update()
 	 
 	# Check for quit
@@ -1050,3 +1090,9 @@ while run:
 			pygame.quit()
 			run = False
 			
+		if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+			pos = pygame.mouse.get_pos()
+			for button in mainMenu:
+				if button.rect.collidepoint(pos):
+					button.press()
+					break
