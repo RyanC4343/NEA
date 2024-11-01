@@ -92,11 +92,10 @@ class Map():
 
 		while not self.created:
 			# Print map
-			self.print()
+			self.printMap()
 
 			# Print any towers so user can see spawn location
-			for tower in towers:
-				tower.print()
+			map.printTowers()
 
 			pygame.display.update()
 
@@ -245,15 +244,11 @@ class Map():
 
 
 	# Print function for map
-	def print(self): 
-		# Finds columns and rows in dimensions array
-		x = len(self.array)
-		y = len(self.array[0])
-
+	def printMap(self): 
 		# Loops through x axis
-		for xPos in range(x): 	
+		for xPos in range(self.columns): 	
 			# Loops through y axis	
-			for yPos in range(y):
+			for yPos in range(self.rows):
 				# Checks tile type
 				# Prints tile to the location
 				if self.array[xPos][yPos][0] == 'green':
@@ -261,6 +256,19 @@ class Map():
 					
 				elif self.array[xPos][yPos][0] == 'brown':
 					SCREEN.blit(brownTile.image, (xPos * 50, yPos * 50))
+
+	# print function for towers on map
+	def printTowers(self):
+		# Loops through x axis
+		for xPos in range(self.columns): 	
+			# Loops through y axis	
+			for yPos in range(self.rows):
+				# Checks if tower is at location
+				if self.array[xPos][yPos][1] != 'free':
+					# If tower is at location, prints
+					self.array[xPos][yPos][1].print()
+					# Calls shoot procedure, this also checks cool down
+					self.array[xPos][yPos][1].shoot()
 
 
 class Enemy():
@@ -397,13 +405,12 @@ class Tower():
 		self.x = mx // 50
 		self.y = my // 50
 		self.rect.center = (self.x * 50 + 25, self.y * 50 + 25)
-		map.array[self.x][self.y][1] = type
-		# Appends self to the towers array
-		towers.append(self)
+		# Append object to location in map array 
+		map.array[self.x][self.y][1] = self
 		# Creates blank bullets array
 		self.bullets = []
 		self.cd = cd
-		self.cdTimer = 1
+		self.cdTimer = 3
 		self.bulletDMG = bulletDMG
 
 		self.rangeDist = range
@@ -411,34 +418,24 @@ class Tower():
 
 		
 	def print(self):
-		# Finds dimensions of map to then loop through
-		x = len(map.array)
-		y = len(map.array[0])
+		SCREEN.blit(self.image, (self.x * 50, self.y * 50))
+		# Checks to see if range needs to be printed too
+		if self.showRange == True:
+			# Prints range circle
+			pygame.draw.circle(SCREEN, (255, 255, 255), (self.x * 50 + 25, self.y * 50 + 25), self.rangeDist, 2)
 
-		# Loops through x coords
-		for xPos in range(x):
-			# Loops through y coords		
-			for yPos in range(y):
-				# Checks for self, prints tower to screen
-				if map.array[xPos][yPos][1] == self.type:
-					SCREEN.blit(self.image, (xPos * 50, yPos * 50))
-					# Checks to see if range needs to be printed too
-					if self.showRange == True:
-						# Prints range circle
-						pygame.draw.circle(SCREEN, (255, 255, 255), (xPos * 50 + 25, yPos* 50 + 25), self.rangeDist, 2)
-					instance = 0
-					for bullet in self.bullets:
-						# Prints bullets
-						bullet.print()
-
-						# Checks to see if bullet has hit enemy
-						if bullet.hit == True:
-							# Removes bullet damage from enemy if hit
-							bullet.enemy.lives -= bullet.damage
-
-							# Removes bullet from bullet array
-							self.bullets.pop(instance)
-						instance += 1
+		
+		instance = 0
+		for bullet in self.bullets:
+			# Prints bullets
+			bullet.print()
+			# Checks to see if bullet has hit enemy
+			if bullet.hit == True:
+				# Removes bullet damage from enemy if hit
+				bullet.enemy.lives -= bullet.damage
+				# Removes bullet from bullet array
+				self.bullets.pop(instance)
+			instance += 1
 				
 	
 	
@@ -635,7 +632,79 @@ class Spawn(Tower):
 	def bulletCreate(self):
 		return
 
+
+# Create button class
+class Button():
+	# Define init case
+	def __init__(self, x, y, height, width, text, colour):
 		
+		self.colour = colour
+		self.col = colour
+		
+		# Render text parameter for button as text
+		self.text = font.render(text, True, 'white')
+
+		# Scale text to fit into button dimensions
+		self.text = pygame.transform.scale(self.text, (height - 2, width - 4))
+
+		# Get rect for text
+		self.textrect = self.text.get_rect()
+		self.textrect.center = (x, y)
+
+
+		# Create button rect
+		self.rect = pygame.Rect(0, 0, height, width)
+		self.rect.center = (x, y)
+
+	# Create print function for class
+	def print(self):
+		# Check for mouse hover
+		if self.rect.collidepoint(pygame.mouse.get_pos()):
+			# Change button colour
+			self.colourChange('green')
+		else:
+			# Otherwise default button colour
+			self.colourChange(self.col)
+
+		# Draw button rect with colour
+		pygame.draw.rect(SCREEN, self.colour, self.rect)
+		# Output text
+		SCREEN.blit(self.text, self.textrect)
+
+
+	# Button colour change
+	def colourChange(self, new):
+		self.colour  = new
+
+	def press(self):
+		pass
+
+class createMapButton(Button):
+	def __init__(self):
+		super().__init__(800, 320, 200, 140, 'Create map', 'black')
+	
+	def press(self):
+		player.state = 'mapCreate'
+
+
+class playMapButton(Button):
+	def __init__(self):
+		super().__init__(800, 470, 200, 140, 'Play map', 'black')
+	
+	def press(self):
+		player.state = 'playMap'
+	
+class RCTDButton(Button):
+	def __init__(self):
+		super().__init__(800, 120, 400, 200, 'RC - TD', 'black')
+
+	def press(self):
+		player.state = 'menu'
+	
+	def colourChange(self, new):
+		pass
+
+
 	
 # Build tower procedure
 def build(): 
@@ -698,12 +767,12 @@ def spawnEnemy():
 		# Checks if needs to create tank
 		if type == 'tank':
 			# Creates tank
-			enemy = Tank()
+			Tank()
 
 		# Checks if needs to create soldier
 		elif type == 'soldier':
 			# Creates soldier
-			enemy = Soldier()
+			Soldier()
 
 		# When enemy created, delete from list
 		order.pop(0)
@@ -732,7 +801,7 @@ def gameUpdate():
 	global enemies, instance, loop
 
 	# Prints map
-	map.print()
+	map.printMap()
 
 	# Outputs player stats - score, lives
 	displayLiveStats()
@@ -773,6 +842,8 @@ def gameUpdate():
 					enemies.pop(instance)
 					# Increment instance
 				instance += 1
+	# Prints towers after printing map and enemies
+	map.printTowers()
 
 	# Checks for closing window
 	for events in pygame.event.get():
@@ -782,17 +853,27 @@ def gameUpdate():
 			loop = False
 			return
 		
-		# If user clicks, tower build function called
+		# If user clicks, tower build function called and range show
 		elif events.type == pygame.MOUSEBUTTONDOWN:
-			build()		
-	
-	# For each tower in list of towers
-	for tower in towers:
-		# Prints tower
-		tower.print()
+			build()
+			showRange()
 
-		# Checks if needs to shoot
-		tower.shoot()
+# Procedure to display tower range when clicked on
+def showRange():
+	# Get position of click
+	position = pygame.mouse.get_pos()
+	# Find in terms of grid location
+	pos = [position[0] // 50, position[1] // 50]
+
+	# Find tower at that position
+	tower = map.array[pos[0]][pos[1]][1]
+	# Check tower exists - not free, spawn or base - these have no range
+	if tower != 'free' or tower != 'spawn' or tower != 'base':
+		# Switch showRange boolean value
+		if map.array[pos[0]][pos[1]][1].showRange == True:
+			map.array[pos[0]][pos[1]][1].showRange = False
+		else:
+			map.array[pos[0]][pos[1]][1].showRange = True
 
 
 
@@ -816,7 +897,7 @@ def saveLeaderboard():
 	# score = player.getScore() - COMMENT OUT FOR TESTING
 
 	# Set score to any number for testing purposes
-	score = 3000
+	score = 0
 
 	# Calls function to load leaderboard
 	LBScores = loadLeaderboard()
@@ -941,14 +1022,12 @@ map = Map()
 # Create instance of player class
 player = Player()
 
-# Call leaderboard save to test procedure
-saveLeaderboard()
 
 # Update function to be used when creating map
 def mapCreateUpdate():
 	
 	# Prints map
-	map.print()
+	map.printMap()
 
 	# Checks for events
 	for events in pygame.event.get():
@@ -957,8 +1036,7 @@ def mapCreateUpdate():
 			pygame.quit()
 			return
 
-	for tower in towers:
-		tower.print()
+	map.printTowers()
 
 
 	# Updates display at normal FPS
@@ -994,81 +1072,12 @@ def gameLoop():
 
 		# As loop is global variable, if window closed, does not try to update, so no error given
 		if loop == False:
+			pygame.quit()
 			break
 		# Updates game window
 		pygame.display.update()
 		CLOCK.tick(FPS)
 		
-# Create button class
-class Button():
-	# Define init case
-	def __init__(self, x, y, height, width, text, colour):
-		
-		self.colour = colour
-		self.col = colour
-		
-		# Render text parameter for button as text
-		self.text = font.render(text, True, 'white')
-
-		# Scale text to fit into button dimensions
-		self.text = pygame.transform.scale(self.text, (height - 2, width - 4))
-
-		# Get rect for text
-		self.textrect = self.text.get_rect()
-		self.textrect.center = (x, y)
-
-
-		# Create button rect
-		self.rect = pygame.Rect(0, 0, height, width)
-		self.rect.center = (x, y)
-
-	# Create print function for class
-	def print(self):
-		# Check for mouse hover
-		if self.rect.collidepoint(pygame.mouse.get_pos()):
-			# Change button colour
-			self.colourChange('green')
-		else:
-			# Otherwise default button colour
-			self.colourChange(self.col)
-
-		# Draw button rect with colour
-		pygame.draw.rect(SCREEN, self.colour, self.rect)
-		# Output text
-		SCREEN.blit(self.text, self.textrect)
-
-
-	# Button colour change
-	def colourChange(self, new):
-		self.colour  = new
-
-	def press(self):
-		pass
-
-# Create test button
-test = Button(200, 200, 30, 40, 'hello', 'blue')
-
-class createMapButton(Button):
-	def __init__(self):
-		super().__init__(800, 320, 200, 140, 'Create map', 'black')
-	
-	def press(self):
-		player.state = 'mapCreate'
-
-
-class playMapButton(Button):
-	def __init__(self):
-		super().__init__(800, 470, 200, 140, 'Play map', 'black')
-	
-	def press(self):
-		player.state = 'playMap'
-	
-class RCTDButton(Button):
-	def __init__(self):
-		super().__init__(800, 120, 400, 200, 'RC - TD', 'black')
-
-	def press(self):
-		player.state = 'menu'
 
 mainMenu = [createMapButton(), playMapButton(), RCTDButton()]
 
@@ -1084,7 +1093,8 @@ while run:
 
 	SCREEN.fill('white')
 	if map.created:
-		map.print()
+		map.printMap()
+		map.printTowers()
 	
 	displayMenu()
 
