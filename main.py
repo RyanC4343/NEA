@@ -46,7 +46,6 @@ class Player():
 		return player.__lives
 
 
-
 class Map():
 	def __init__(self):
 		# Calculates width and height in terms of tile dimensions to work out number of columns and rows needed
@@ -395,7 +394,7 @@ class Tile():
 
 class Tower():
 	# Initialise tower class
-	def __init__(self, image, type, mx, my, range, cd, bulletDMG):
+	def __init__(self, image, type, mx, my, range, cd, bulletDMG, towerUpgrades):
 		# Transforms tower image to 5 pixels smaller than tile size
 		self.image = pygame.transform.scale(image, (greenTile.size - 5, greenTile.size - 5))
 		self.rect = self.image.get_rect()
@@ -409,12 +408,12 @@ class Tower():
 		map.array[self.x][self.y][1] = self
 		# Creates blank bullets array
 		self.bullets = []
-		self.cd = cd
+		self.cd = cd * pow(0.7, towerUpgrades.ROFLevel)//1
 		self.cdTimer = 3
-		self.bulletDMG = bulletDMG
-
-		self.rangeDist = range
+		self.bulletDMG = bulletDMG * (1.2 ** towerUpgrades.damageLevel)
+		self.rangeDist = range * (1.2 ** towerUpgrades.rangeLevel)
 		self.showRange = True
+		
 
 		
 	def print(self):
@@ -449,7 +448,7 @@ class Tower():
 			# Creates equation of circle, with radius of the range
 			if (x - x1) ** 2 + (y - y1) ** 2 <= (self.rangeDist ** 2):
 				# Checks cool down timer for tower
-				if self.cdTimer == 0:
+				if self.cdTimer <= 0:
 					# If cool down is 0, creates a bullet targetted at the enemy
 					self.bulletCreate(enemy)
 
@@ -525,7 +524,7 @@ class BasicTurret(Tower):
 		image = turretIMG
 
 		# Calls tower class initiation with image, type, mouse position, range, cool down and damage
-		super().__init__(image, 'turret', mx, my, 150, 200, 4)
+		super().__init__(image, 'turret', mx, my, 150, 200, 4, basicTurretLevels)
 
 class MachineTurret(Tower):
 	# Uses inheritance of tower class
@@ -534,7 +533,7 @@ class MachineTurret(Tower):
 		image = machineGunIMG
 
 		# Calls tower class initiation with image, type, mouse position, range, cool down and damage
-		super().__init__(image, 'machine', mx, my, 100, 20, 2)
+		super().__init__(image, 'machine', mx, my, 100, 50, 2, machineTurretLevels)
 
 
 class Soldier(Enemy):
@@ -589,7 +588,7 @@ class Base(Tower):
 		image = baseIMG
 
 		# Calls tower init function, with image, type, position, range, cool down and damage
-		super().__init__(image, 'base', x * 50, y * 50, 0, 0, 0)
+		super().__init__(image, 'base', x * 50, y * 50, 0, 0, 0, blankLevels)
 		
 		# Changes image size to fill tile
 		self.image = pygame.transform.scale(image, (greenTile.size, greenTile.size))
@@ -616,7 +615,7 @@ class Spawn(Tower):
 		image = spawnIMG
 
 		# Calls tower init function, with image, type, position, range, cool down and damage
-		super().__init__(image, 'spawn', x, y, 0, 0, 0)
+		super().__init__(image, 'spawn', x, y, 0, 0, 0, blankLevels)
 
 		# Changes image size to fill tile
 		self.image = pygame.transform.scale(image, (greenTile.size, greenTile.size))
@@ -633,7 +632,7 @@ class Spawn(Tower):
 		return
 
 
-# Create button class
+# Create button parent class
 class Button():
 	# Define init case
 	def __init__(self, x, y, height, width, text, colour):
@@ -658,10 +657,16 @@ class Button():
 
 	# Create print function for class
 	def print(self):
+		mPos = pygame.mouse.get_pos()
+
 		# Check for mouse hover
-		if self.rect.collidepoint(pygame.mouse.get_pos()):
-			# Change button colour
-			self.colourChange('green')
+		if self.rect.collidepoint(mPos):
+			# Check for mouse press when mouse over button
+			if pygame.mouse.get_pressed()[0]:
+				self.press()
+			else:
+				# Change button colour if no click
+				self.colourChange('green')
 		else:
 			# Otherwise default button colour
 			self.colourChange(self.col)
@@ -676,9 +681,11 @@ class Button():
 	def colourChange(self, new):
 		self.colour  = new
 
+	# Use polymorphism to change states
 	def press(self):
 		pass
 
+# Create button - child
 class createMapButton(Button):
 	def __init__(self):
 		super().__init__(800, 320, 200, 140, 'Create map', 'black')
@@ -686,7 +693,7 @@ class createMapButton(Button):
 	def press(self):
 		player.state = 'mapCreate'
 
-
+# Create button - child
 class playMapButton(Button):
 	def __init__(self):
 		super().__init__(800, 470, 200, 140, 'Play map', 'black')
@@ -694,15 +701,77 @@ class playMapButton(Button):
 	def press(self):
 		player.state = 'playMap'
 	
+# Create button - child
 class RCTDButton(Button):
 	def __init__(self):
 		super().__init__(800, 120, 400, 200, 'RC - TD', 'black')
 
 	def press(self):
+		print('changed to menu')
 		player.state = 'menu'
 	
-	def colourChange(self, new):
-		pass
+
+# Create button - child
+class upgradePageButton(Button):
+	def __init__(self):
+		super().__init__(800, 620, 200, 140, 'Upgrade towers', 'black')
+
+	def press(self):
+		player.state = 'upgradeMenu'
+
+
+class towerUpgrade():
+	def __init__(self, towerName, x, y):
+		self.towerName = towerName
+		# Set multipliers for damage, range and rate of fire
+		self.damageMult = 1
+		self.rangeMult = 1
+		self.ROFMult = 1
+		self.damageLevel = 1
+		self.rangeLevel = 1
+		self.ROFLevel = 1
+		self.maxLevel = 5
+		self.x = x
+		self.y = y
+		self.cd = 0
+		
+
+	def print(self):
+		x = self.x
+		y = self.y
+		xGap = 160
+		yGap = 40
+		# Renders and prints tower name text
+		SCREEN.blit((font.render(self.towerName, True, "blue")), (x + (0.5 * xGap), y))
+
+		text = [['Range', self.rangeLevel], ['Damage', self.damageLevel], ['Fire rate', self.ROFLevel]]
+
+		mx, my = pygame.mouse.get_pos()
+		
+		for row in range(len(text)):
+			for column in range(len(text[row])):
+				if column == 1:
+					SCREEN.blit((font.render(str(text[row][column]) + '/' + str(self.maxLevel), True, "blue")), (x + ((column) * xGap), y + ((row + 1) * yGap)))
+				else:
+					SCREEN.blit((font.render(str(text[row][column]), True, "blue")), (x + ((column) * xGap), y + ((row + 1) * yGap)))
+			if text[row][1] < self.maxLevel:
+				imagePos = [(x + ((column + 0.58) * xGap)), (y + ((row + 1) * yGap))]
+				SCREEN.blit(plusIMG, (imagePos))
+
+
+
+				if mx >= imagePos[0] and mx <= imagePos[0] + 32 and my >= imagePos[1] and my <= imagePos[1] + 32 and pygame.mouse.get_pressed()[0] and self.cd == 0:
+					self.cd = 10
+					if row == 0:
+						self.rangeLevel += 1
+					elif row == 1:
+						self.damageLevel += 1
+					elif row == 2:
+						self.ROFLevel += 1
+		if self.cd != 0:
+			self.cd -= 1
+
+		
 
 
 	
@@ -719,12 +788,12 @@ def build():
 		# Check if 1 key pressed
 		if userInput[pygame.K_1]:
 			# Creates basic turret
-			tower = BasicTurret(mx, my)
+			BasicTurret(mx, my)
 
 		# Checks if 2 key pressed
 		elif userInput[pygame.K_2]:
 			# Creates machine gun
-			tower = MachineTurret(mx, my)
+			MachineTurret(mx, my)
 
 # Check tile is free
 def checkTile(mx, my):
@@ -737,13 +806,6 @@ def checkTile(mx, my):
 		return True
 	else: 
 		return False
-
-# Count acts as delay for spawning enemies
-count = 0
-
-# List of enemies to be created
-order = ['soldier', 'tank', 'soldier', 'tank', 'soldier', 'tank', 'soldier', 'tank']
-#order = ['tank']
 
 
 # Enemy spawn function
@@ -780,7 +842,7 @@ def spawnEnemy():
 		# Reset count, will then increase until = .5 seconds later
 		count = 0
 
-
+# Display lives and score within game
 def displayLiveStats():
 	livesText = font.render('Lives: '+str(player.getLives()), True, 'black')
 	livesTextrect = livesText.get_rect()
@@ -795,69 +857,6 @@ def displayLiveStats():
 
 
 
-# Update function for main game loop
-def gameUpdate():
-	# Defines global variables
-	global enemies, instance, loop
-
-	# Prints map
-	map.printMap()
-
-	# Outputs player stats - score, lives
-	displayLiveStats()
-
-	# Spawns any enemies	
-	spawnEnemy()
-
-	# Check if number of enemies on screen is 0
-	if len(enemies) != 0:
-
-		instance = 0
-
-		# Checks for each enemy		
-		for enemy in enemies:
-			# If enemy lives <= 0 then deletes enemy
-			if enemy.lives <= 0:
-				# Increase score by amount for enemy
-				player.scoreInc(enemy.score)
-
-				# Deletes enemy
-				enemies.pop(instance)
-				return
-			else:
-				# If enemy not out of lives then prints enemy to screen
-				enemy.print()
-			
-			# Updates instance, this is used to delete enemies
-			instance += 1
-
-		# Check again if length of enemies is 0 - last enemy could have been deleted
-		if len(enemies) != 0:
-			# Defaults instance to 0, so can be used for popping enemies
-			instance = 0
-			# Checks if enemy reached end of path
-			for enemy in enemies:
-				if enemy.pathEnd == True:
-					# Deletes enemy at instance location
-					enemies.pop(instance)
-					# Increment instance
-				instance += 1
-	# Prints towers after printing map and enemies
-	map.printTowers()
-
-	# Checks for closing window
-	for events in pygame.event.get():
-		if events.type == pygame.QUIT:
-			pygame.quit()
-			# Exits main game loop
-			loop = False
-			return
-		
-		# If user clicks, tower build function called and range show
-		elif events.type == pygame.MOUSEBUTTONDOWN:
-			build()
-			showRange()
-
 # Procedure to display tower range when clicked on
 def showRange():
 	# Get position of click
@@ -868,13 +867,12 @@ def showRange():
 	# Find tower at that position
 	tower = map.array[pos[0]][pos[1]][1]
 	# Check tower exists - not free, spawn or base - these have no range
-	if tower != 'free' or tower != 'spawn' or tower != 'base':
+	if tower != 'free' and tower != 'spawn' and tower != 'base':
 		# Switch showRange boolean value
 		if map.array[pos[0]][pos[1]][1].showRange == True:
 			map.array[pos[0]][pos[1]][1].showRange = False
 		else:
 			map.array[pos[0]][pos[1]][1].showRange = True
-
 
 
 # Function to load leaderboard file
@@ -968,7 +966,8 @@ def saveLeaderboard():
 			
 			saveLBFile(LBScores)
 			return
-		
+
+# Save data passed in to file	
 def saveLBFile(LBScores):
 	# Opens file in write mode
 	LBFile = open('leaderboard.txt', 'w')
@@ -993,56 +992,19 @@ def displayLeaderboard(x, y):
 		# Blits items to screen
 		SCREEN.blit(current, (x, y + 10 + (40 * (pos + 0.8))))
 
-
-
-
-# Load images
-soldierIMG = pygame.image.load('assets/images/soldier.png').convert_alpha()
-tankIMG = pygame.image.load('assets/images/tank.png').convert_alpha()
-greenIMG = pygame.image.load('assets/images/greenSq.png').convert_alpha()
-brownIMG = pygame.image.load('assets/images/brownSq.png').convert_alpha()
-turretIMG = pygame.image.load('assets/images/turret.png').convert_alpha()
-machineGunIMG = pygame.image.load('assets/images/machineGun.png').convert_alpha()
-bulletIMG = pygame.image.load('assets/images/bullet.png').convert_alpha()
-baseIMG = pygame.image.load('assets/images/base.png').convert_alpha()
-spawnIMG = pygame.image.load('assets/images/spawn.png').convert_alpha()
-
-
-# Create instances of tile class
-greenTile = Tile('green', greenIMG)
-brownTile = Tile('brown', brownIMG)
-
-# Create blank lists for towers and enemies to be stored in
-towers = []
-enemies = []
-
-# Creates map
-map = Map()
-
-# Create instance of player class
-player = Player()
-
-
-# Update function to be used when creating map
-def mapCreateUpdate():
+# Procedure to display the main menu
+def displayMenu():
+	for button in mainMenu:
+		button.print()
 	
-	# Prints map
-	map.printMap()
-
-	# Checks for events
-	for events in pygame.event.get():
-		# Checks for closing window
-		if events.type == pygame.QUIT:
-			pygame.quit()
-			return
-
-	map.printTowers()
+	displayLeaderboard(150, 250)
 
 
-	# Updates display at normal FPS
-	pygame.display.update()
-	CLOCK.tick(FPS)
 
+
+'''
+Loops for main states
+'''
 # All of map creation within 1 singular procedure
 def mapCreate():
 	# Gives user info about basic functions
@@ -1067,25 +1029,194 @@ def gameLoop():
 	loop = True
 
 	while loop:
-		# Calls update function to create, move and print objects to screen
-		gameUpdate()
-
 		# As loop is global variable, if window closed, does not try to update, so no error given
 		if loop == False:
 			pygame.quit()
-			break
+			return
+
+		# Calls update function to create, move and print objects to screen
+		gameUpdate()
+
 		# Updates game window
 		pygame.display.update()
 		CLOCK.tick(FPS)
 		
 
-mainMenu = [createMapButton(), playMapButton(), RCTDButton()]
+def upgradeMenuLoop():
+	global loop
+	loop = True
+	while loop:
+		upgradeMenuUpdate()
 
-def displayMenu():
-	for button in mainMenu:
-		button.print()
+		if loop == False:
+			return
+
+
+
+'''
+Loops for updating screen
+'''
+# Update function for main game loop
+def gameUpdate():
+	# Defines global variables
+	global enemies, instance, loop
+
+	# Checks for closing window
+	for events in pygame.event.get():
+		if events.type == pygame.QUIT:
+			pygame.quit()
+			# Exits main game loop
+			loop = False
+			return
+		
+		# If user clicks, tower build function called and range show
+		elif events.type == pygame.MOUSEBUTTONDOWN:
+			build()
+			showRange()
+
+	# Prints map
+	map.printMap()
+
+	# Outputs player stats - score, lives
+	displayLiveStats()
+
+	# Spawns any enemies	
+	spawnEnemy()
+
+	# Check if number of enemies on screen is 0
+	if len(enemies) != 0:
+
+		instance = 0
+
+		# Checks for each enemy		
+		for enemy in enemies:
+			# If enemy lives <= 0 then deletes enemy
+			if enemy.lives <= 0:
+				# Increase score by amount for enemy
+				player.scoreInc(enemy.score)
+
+				# Deletes enemy
+				enemies.pop(instance)
+				return
+			else:
+				# If enemy not out of lives then prints enemy to screen
+				enemy.print()
+			
+			# Updates instance, this is used to delete enemies
+			instance += 1
+
+		# Check again if length of enemies is 0 - last enemy could have been deleted
+		if len(enemies) != 0:
+			# Defaults instance to 0, so can be used for popping enemies
+			instance = 0
+			# Checks if enemy reached end of path
+			for enemy in enemies:
+				if enemy.pathEnd == True:
+					# Deletes enemy at instance location
+					enemies.pop(instance)
+					# Increment instance
+				instance += 1
+	# Prints towers after printing map and enemies
+	map.printTowers()
+
+
+# Update function to be used when creating map
+def mapCreateUpdate():
+	# Checks for events
+	for events in pygame.event.get():
+		# Checks for closing window
+		if events.type == pygame.QUIT:
+			pygame.quit()
+			return
 	
-	displayLeaderboard(150, 250)
+	# Prints map
+	map.printMap()
+
+	# Prints towers
+	map.printTowers()
+
+
+	# Updates display at normal FPS
+	pygame.display.update()
+	CLOCK.tick(FPS)
+
+def upgradeMenuUpdate():
+	global loop
+	# Checks for closing window
+	if player.state != 'upgradeMenu':
+		loop = False
+		return
+	for events in pygame.event.get():
+		if events.type == pygame.QUIT:
+			pygame.quit()
+			# Exits main game loop
+			loop = False
+			return
+
+	SCREEN.fill('white')
+	for tower in turretUpgrades:
+		tower.print()
+	for button in upgradeMenu:
+		button.print()
+
+	
+
+	pygame.display.update()
+	CLOCK.tick(FPS)
+
+
+
+# Count acts as delay for spawning enemies
+count = 0
+
+# List of enemies to be created
+order = ['soldier', 'tank', 'soldier', 'tank', 'soldier', 'tank', 'soldier', 'tank']
+
+
+# Load images
+soldierIMG = pygame.image.load('assets/images/soldier.png').convert_alpha()
+tankIMG = pygame.image.load('assets/images/tank.png').convert_alpha()
+greenIMG = pygame.image.load('assets/images/greenSq.png').convert_alpha()
+brownIMG = pygame.image.load('assets/images/brownSq.png').convert_alpha()
+turretIMG = pygame.image.load('assets/images/turret.png').convert_alpha()
+machineGunIMG = pygame.image.load('assets/images/machineGun.png').convert_alpha()
+bulletIMG = pygame.image.load('assets/images/bullet.png').convert_alpha()
+baseIMG = pygame.image.load('assets/images/base.png').convert_alpha()
+spawnIMG = pygame.image.load('assets/images/spawn.png').convert_alpha()
+plusIMG = pygame.image.load('assets/images/plusSign.png').convert_alpha()
+plusIMG = pygame.transform.scale(plusIMG, (32, 32))
+
+
+# Create instances of tile class
+greenTile = Tile('green', greenIMG)
+brownTile = Tile('brown', brownIMG)
+
+# Create blank lists for towers and enemies to be stored in
+towers = []
+enemies = []
+
+# Creates map
+map = Map()
+
+# Create instance of player class
+player = Player()
+
+# Define main buttons
+RCTD =  RCTDButton()
+
+# Define main menu buttons
+mainMenu = [createMapButton(), playMapButton(), RCTDButton(), upgradePageButton()]
+
+# Define upgrade menu buttons
+upgradeMenu = [RCTDButton()]
+
+
+basicTurretLevels = towerUpgrade('Basic Turret', 80, 250)
+machineTurretLevels = towerUpgrade('Machine Gun', 600, 250)
+# Create blank levels for spawn and base - both classed as turrets
+blankLevels = towerUpgrade('', 0, 0)
+
+turretUpgrades = [basicTurretLevels, machineTurretLevels]
 
 # Game loop for testing
 run = True
@@ -1096,11 +1227,10 @@ while run:
 		map.printMap()
 		map.printTowers()
 	
-	displayMenu()
+	if player.state == 'menu':
+		displayMenu()
 
-	
-
-	if player.state == 'mapCreate':
+	elif player.state == 'mapCreate':
 		mapCreate()
 
 	elif player.state == 'playMap' and map.created:
@@ -1108,6 +1238,10 @@ while run:
 
 	elif player.state == 'playMap':
 		print('Must create map first')
+
+	elif player.state == 'upgradeMenu':
+		upgradeMenuLoop()
+
 
 	player.state = 'menu'
 	
@@ -1125,3 +1259,6 @@ while run:
 				if button.rect.collidepoint(pos):
 					button.press()
 					break
+
+					
+					
