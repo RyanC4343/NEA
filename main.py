@@ -7,7 +7,7 @@ pygame.init()
 SCREENWIDTH = 1600
 SCREENHEIGHT = 1000
 SCREENSIZE = [SCREENWIDTH, SCREENHEIGHT]
-FPS = 60
+FPS = 200
 font = pygame.font.Font('freesansbold.ttf', 32)
 
 # Create screen
@@ -20,9 +20,19 @@ CLOCK = pygame.time.Clock()
 
 class Player():
 	def __init__(self):
+		# Encapsulate some variables
 		self.__score = 0
-		self.__lives = 8
+		self.__lives = 2
 		self.state = 'menu'
+		self.__wave = 0
+	
+	def resetWave(self):
+		# Reset wave counter
+		self.__wave = 0
+
+	def resetScore(self):
+		# Reset score
+		self.__score = 0
 
 	def lifeLoss(self):
 		# Decreases player life
@@ -32,12 +42,29 @@ class Player():
 			# Calls game over function
 			self.gameOver()
 
+	def setLives(self, num):
+		# Check value > 0
+		if num > 0:
+			# Set lives to parameter
+			self.__lives = num
+
 	def gameOver(self):
-		pass
+		# Change state to game over
+		self.state = 'gameOver'
+		# Call leaderboard save
+		saveLeaderboard()
+
+	def waveInc(self):
+		# Increase wve by 1
+		self.__wave += 1
+
+	def getWave(self):
+		# Return wave counter 
+		return self.__wave
 
 	def scoreInc(self, points):
 		# Takes points to increase score by as parameter, increases score
-		self.__score += points
+		self.__score += int(points)
 
 	def getScore(self):
 		return self.__score
@@ -59,15 +86,20 @@ class Map():
 		# Creates blank array
 		self.array = [] 
 		
+
+	def newMap(self):
+		# Clear waypoints and map array
+		self.waypoints = []
+		self.array = []
 		# Creates blank arrays needed for creation of 3D array
 		array = []
 		array2 = []
-		
-		# Creates 3D array to store the map details, nested for loops create rows, columns and tile data - default at 'green' and 'free'
+		# Creates 3D array to store the map details,
+		# Nested for loops create rows and columns: set to 'green' and 'free'
 		# Loops to create rows
-		for row in range(x): 
+		for row in range(self.columns): 
 			# Loops to create columns
-			for tile in range(y): 
+			for tile in range(self.rows): 
 				array = ['green', 'free']
 				# Appends filled array to blank second array
 				array2.append(array) 
@@ -75,15 +107,25 @@ class Map():
 			# Appends 2D array2 to main array
 			self.array.append(array2) 
 			# Resets array2
-			array2 = [] 
-			
+			array2 = []
+
+	def clearTowers(self):
+		# Loop through all tiles
+		for row in range(self.columns):
+			for tile in range(self.rows):
+				# If tile already free, move on
+				if self.array[row][tile][1] != 'free':
+					# If not - check if type is base or spawn
+					if self.array[row][tile][1].type != 'base' and self.array[row][tile][1].type != 'spawn':
+						# If not, remove instance and replace instance with 'free'
+						self.array[row][tile][1] = 'free'
 
 	'''
 		Display a tiled map and allow the user to draw 
 		the enemy path by clicking tiles.
 	'''
 	def create(self):
-
+		self.newMap()
 		# Array to indicate the tile coords of the previously clicked tile
 		prevPoint = None
 
@@ -230,7 +272,7 @@ class Map():
 
 		if accepted:
 			# If valid then creates base
-			base = Base(currPoint)
+			Base(currPoint)
 			self.created = True
 
 	def addSpawn(self, x, y):
@@ -272,20 +314,25 @@ class Map():
 
 class Enemy():
 	# Init function
-	def __init__(self, image, type, speedA, speedB):
+	def __init__(self, image, type, speed, cd, lives):
 		# Declare variables and set image size to 40x40 pixels
 		# Include original copy of image so can be used for rotation
 		self.imageOriginal = pygame.transform.scale(image, (40,40))
 		self.image = pygame.transform.scale(image, (40,40))
 		self.rect = self.image.get_rect()
-		# 2 speeds for control of enemy pace
-		self.speedA = speedA
-		self.speedB = speedB
+		# Set attributes for enemy
+		self.speed = speed
 		self.pathEnd = False
 		self.type = type
 		self.point = 0
 		self.rotate = 0
 		self.lives = 5
+		self.cd = cd 
+		self.cdTimer = 5
+
+		# Enemy health increases in later waves
+		self.lives = (lives * (1.05 ** player.getWave())) // 1
+		self.score = self.lives
 
 
 		# Uses waypoints from map creation for enemy path
@@ -317,6 +364,12 @@ class Enemy():
 
 			return
 
+		if self.cdTimer >= 1:
+			self.cdTimer -= 1
+			return
+
+		self.cdTimer = self.cd
+		
 		# Takes waypoint positions of next location
 		wpx = self.waypoints[self.point][0]
 		wpy = self.waypoints[self.point][1]
@@ -350,14 +403,16 @@ class Enemy():
 
 			# Change direction of enemy sprite facing
 			self.getDirection(disX, disY)
-
 			return
-
-
+		
 
 		# Updates the rect positions - then displayed to screen in the print function
-		self.rect.centerx += ((disX * self.speedB / disT) / self.speedA ) // 1
-		self.rect.centery += ((disY * self.speedB / disT) / self.speedA) // 1
+		self.rect.centerx += (disX * self.speed / disT)
+		self.rect.centery += (disY * self.speed / disT)
+		self.cdTimer -= 1
+
+
+
 
 	def getDirection(self, changeY, changeX):
 		'''
@@ -408,7 +463,7 @@ class Tower():
 		map.array[self.x][self.y][1] = self
 		# Creates blank bullets array
 		self.bullets = []
-		self.cd = cd * pow(0.7, towerUpgrades.ROFLevel)//1
+		self.cd = cd * pow(0.9, towerUpgrades.ROFLevel) // 1
 		self.cdTimer = 3
 		self.bulletDMG = bulletDMG * (1.2 ** towerUpgrades.damageLevel)
 		self.rangeDist = range * (1.2 ** towerUpgrades.rangeLevel)
@@ -542,8 +597,8 @@ class Soldier(Enemy):
 		# Takes image for soldier
 		image = soldierIMG
 		
-		# Calls enemy class initiation with image, type, and walk speed
-		super().__init__(image, 'soldier', 2, 6)
+		# Calls enemy class initiation with image, type and move cool down
+		super().__init__(image, 'soldier', 2, 1, 30)
 
 		# Changes image size to smaller, as default is 40x40 pixels
 		self.image = pygame.transform.scale(image, (10, 20))
@@ -565,16 +620,24 @@ class Tank(Enemy):
 		image = tankIMG
 
 		# Calls enemy class initiation with image, type, and walk speed
-		super().__init__(image, 'tank', 4, 8)
+		super().__init__(image, 'tank', 3, 2, 60)
 
 		# Define enemy dimensions for use in rotation function
 		self.size = 40
 
-		# Sets number of lives for tank		
-		self.lives = 20
+class Boss(Enemy):
+	def __init__(self):
+		# Takes image for boss
+		image = bossIMG
 
-		# Sets score worth for enemy
-		self.score = 25
+		# Calls enemy class initiation with image, type, walk speed and health
+		super().__init__(image, 'boss', 1, 2, 150)
+
+		# Define enemy dimensions for use in rotation function
+		self.size = 45
+
+		self.lives = self.lives * (1.4 ** player.getWave() // 10)
+		self.score = self.lives
 
 
 # User base acts as a tower, has similar attributes - hence can use inheritance
@@ -687,16 +750,16 @@ class Button():
 
 # Create button - child
 class createMapButton(Button):
-	def __init__(self):
-		super().__init__(800, 320, 200, 140, 'Create map', 'black')
+	def __init__(self, x, y):
+		super().__init__(x, y, 200, 140, 'Create map', 'black')
 	
 	def press(self):
 		player.state = 'mapCreate'
 
 # Create button - child
 class playMapButton(Button):
-	def __init__(self):
-		super().__init__(800, 470, 200, 140, 'Play map', 'black')
+	def __init__(self, x, y):
+		super().__init__(x, y, 200, 140, 'Play map', 'black')
 	
 	def press(self):
 		player.state = 'playMap'
@@ -707,14 +770,13 @@ class RCTDButton(Button):
 		super().__init__(800, 120, 400, 200, 'RC - TD', 'black')
 
 	def press(self):
-		print('changed to menu')
 		player.state = 'menu'
 	
 
 # Create button - child
 class upgradePageButton(Button):
-	def __init__(self):
-		super().__init__(800, 620, 200, 140, 'Upgrade towers', 'black')
+	def __init__(self, x, y):
+		super().__init__(x, y, 200, 140, 'Upgrade towers', 'black')
 
 	def press(self):
 		player.state = 'upgradeMenu'
@@ -811,20 +873,25 @@ def checkTile(mx, my):
 # Enemy spawn function
 def spawnEnemy():
 	# Defines global variables - these are needed to be saved and kept up to date
-	global count, order
+	global count, wave, spawnDelay, delay
 
 	# Check if list of enemies is empty
-	if len(order) == 0:
-		# Exits function
-		return
+	if len(wave) == 0 and len(enemies) == 0:
+		# Iterates to next wave, creates new wave
+		player.waveInc()
+		wave = newWave()
+		
 	
 	# Increases count by 1 each frame
 	count += 1
 
-	# Every 0.5 seconds, new enemy spawned
-	if count == FPS * 0.5:
+	if spawnDelay > delay:
+		delay = spawnDelay
+
+	# Delay can change for each enemy, check enemies left to spawn
+	if count >= delay and len(wave) != 0:
 		# Sets enemy type to  next enemy in list
-		type = order[0]
+		type = wave[0]
 		
 		# Checks if needs to create tank
 		if type == 'tank':
@@ -836,11 +903,76 @@ def spawnEnemy():
 			# Creates soldier
 			Soldier()
 
-		# When enemy created, delete from list
-		order.pop(0)
+		# Checks if needs to create boss
+		elif type == 'boss':
+			# Creates boss
+			Boss()
 
-		# Reset count, will then increase until = .5 seconds later
+		# When enemy created, delete from list
+		wave.pop(0)
+
+		# Reset count, will then increase until = 2 seconds later
 		count = 0
+
+		# Different spawn delays for different enemies
+		# Dont want enemies to overlap each other when spawned
+		if len(wave) != 0:
+			if type == wave[0]:
+				if type == 'soldier':
+					delay = 40
+				elif type == 'tank':
+					delay = 70
+				elif type == 'boss':
+					delay = 200
+
+
+def newWave():
+	global spawnDelay
+	# Get current wave
+	currentWave = player.getWave()
+	# Decrease spawn delay - more enemies in short time span
+	if spawnDelay >= 60:
+		spawnDelay -= 2
+
+	if currentWave <= 5:
+		# Early waves: only soldiers, increasing in number
+		wave = ['soldier'] * currentWave
+
+	elif currentWave <= 15:
+		# Intermediate waves: mix of soldiers and gradually more tanks
+		wave = (['soldier'] * 8) + (['tank'] * (2 * (currentWave - 6)))
+
+	elif currentWave % 10 == 0 and currentWave <= 30:
+		# Boss waves (multiples of 10) up to wave 30: only bosses
+		wave = ['boss'] * (currentWave // 10)
+
+	elif currentWave <= 20:
+		# Waves 16-20: Mix of soldiers and tanks to increase difficulty
+		wave = (['soldier'] * 6) + (['tank'] * (currentWave - 10))
+
+	elif currentWave <= 30:
+		# Waves 21-30: Increasing count of soldiers and tanks with some bosses
+		# Uses conditional expression, if wave number is multiple of 5, boss in wave
+		wave = (['soldier'] * 10) + (['tank'] * 4) + ['boss'] * (1 if currentWave % 5 == 0 else 0)
+
+	elif currentWave <= 40:
+		# Waves 31-40: Heavier mix with more tanks and bosses
+		wave = (['soldier'] * 12) + (['tank'] * 6) + ['boss'] * ((currentWave - 30) // 5)
+
+	elif currentWave <= 50:
+		# Waves 41-50: Significant boss presence with many soldiers and tanks
+		wave = (['soldier'] * 15) + (['tank'] * 8) + ['boss'] * ((currentWave - 40) // 3)
+
+	else:
+		# Waves above 50: Exponentially harder - enemies double every 10 waves
+		soldiers = 20 * (2 ** ((currentWave - 50) // 10))  # Double soldiers every 10 waves
+		tanks = 10 * (2 ** ((currentWave - 50) // 15))  # Double tanks every 15 waves
+		bosses = 1 * (2 ** ((currentWave - 50) // 20))  # Double bosses every 20 waves
+		wave = (['soldier'] * soldiers) + (['tank'] * tanks) + (['boss'] * bosses)
+	
+	return wave
+
+
 
 # Display lives and score within game
 def displayLiveStats():
@@ -850,9 +982,32 @@ def displayLiveStats():
 	SCREEN.blit(livesText, livesTextrect)
 
 	scoreText = font.render('Score: '+str(player.getScore()), True, 'black')
-	scoreTextrect = livesText.get_rect()
+	scoreTextrect = scoreText.get_rect()
 	scoreTextrect.topleft = (SCREENWIDTH * 0.02, 30)
 	SCREEN.blit(scoreText, scoreTextrect)
+
+	waveText = font.render('Wave: '+str(player.getWave()), True, 'black')
+	waveTextrect = waveText.get_rect()
+	waveTextrect.topleft = (SCREENWIDTH * 0.02, 78)
+	SCREEN.blit(waveText, waveTextrect)
+
+def displayGameOverStats():
+	# Blank rectangle
+	pygame.draw.rect(SCREEN, 'white', pygame.Rect(733, 330, 140 + (5 * len(str(player.getScore()))), 110))
+
+	# Score text display
+	scoreText = font.render('Score: '+str(player.getScore()), True, 'black')
+	scoreTextrect = scoreText.get_rect()
+	# Set position
+	scoreTextrect.center = (800, 350)
+	SCREEN.blit(scoreText, scoreTextrect)
+
+	# Wave text display
+	waveText = font.render('Wave: '+str(player.getWave()), True, 'black')
+	waveTextrect = waveText.get_rect()
+	# Set position
+	waveTextrect.center = (800, 420)
+	SCREEN.blit(waveText, waveTextrect)
 
 
 
@@ -892,10 +1047,8 @@ def loadLeaderboard():
 
 # Procedure to save leaderboard file
 def saveLeaderboard():
-	# score = player.getScore() - COMMENT OUT FOR TESTING
-
 	# Set score to any number for testing purposes
-	score = 0
+	score = player.getScore()
 
 	# Calls function to load leaderboard
 	LBScores = loadLeaderboard()
@@ -1012,7 +1165,7 @@ def mapCreate():
 To place enemy spawn: left click on chosen tile
 To create path: left click on tile with same x OR y coord as previous tile
 To place your base: right click on either green tile or last clicked tile""")
-
+	map.created = False
 	# Map creation game loop
 	while map.created == False:
 		# Calls map creation function
@@ -1023,15 +1176,23 @@ To place your base: right click on either green tile or last clicked tile""")
 		pygame.display.update()
 		time.sleep(2)
 
+		if map.created == True:
+			player.state = 'menu'
+
 # All of main game loop in 1 function
 def gameLoop():
 	# Sets loop to true, forces into main game loop
 	loop = True
+	newGame()
 
 	while loop:
 		# As loop is global variable, if window closed, does not try to update, so no error given
 		if loop == False:
 			pygame.quit()
+			return
+		# If player dies, state will change, need new screen
+		if player.state != 'playMap':
+			loop = False
 			return
 
 		# Calls update function to create, move and print objects to screen
@@ -1040,7 +1201,17 @@ def gameLoop():
 		# Updates game window
 		pygame.display.update()
 		CLOCK.tick(FPS)
-		
+	
+
+def newGame():
+	global wave, enemies
+	player.setLives(5)
+	player.resetScore()
+	player.resetWave()
+	wave = newWave()
+	enemies = []
+	map.clearTowers()
+
 
 def upgradeMenuLoop():
 	global loop
@@ -1076,10 +1247,7 @@ def gameUpdate():
 
 	# Prints map
 	map.printMap()
-
-	# Outputs player stats - score, lives
-	displayLiveStats()
-
+ 
 	# Spawns any enemies	
 	spawnEnemy()
 
@@ -1119,6 +1287,8 @@ def gameUpdate():
 	# Prints towers after printing map and enemies
 	map.printTowers()
 
+	# Outputs player stats - score, lives
+	displayLiveStats()
 
 # Update function to be used when creating map
 def mapCreateUpdate():
@@ -1153,6 +1323,7 @@ def upgradeMenuUpdate():
 			loop = False
 			return
 
+	# Display text to upgrade screen
 	SCREEN.fill('white')
 	for tower in turretUpgrades:
 		tower.print()
@@ -1164,18 +1335,42 @@ def upgradeMenuUpdate():
 	pygame.display.update()
 	CLOCK.tick(FPS)
 
+def gameOverScreen():
+	# Empty map towers - leave base and spawn
+	map.clearTowers()
 
+	
+	# Check player state
+	while player.state == 'gameOver':
+		# Check for window close
+		for events in pygame.event.get():
+			if events.type == pygame.QUIT:
+				pygame.quit()
+				# Exits main game loop
+				return
+		
+		# Fill screen white
+		SCREEN.fill('white')
+		# Print map
+		map.printMap()
+		# Print spawn and base
+		map.printTowers()
+		# Print buttons in game over button list
+		for button in gameOver:
+			button.print()
+		# Display stats
+		displayGameOverStats()
 
-# Count acts as delay for spawning enemies
-count = 0
+		# Update screen
+		pygame.display.update()
+		CLOCK.tick(FPS)
 
-# List of enemies to be created
-order = ['soldier', 'tank', 'soldier', 'tank', 'soldier', 'tank', 'soldier', 'tank']
 
 
 # Load images
 soldierIMG = pygame.image.load('assets/images/soldier.png').convert_alpha()
 tankIMG = pygame.image.load('assets/images/tank.png').convert_alpha()
+bossIMG = pygame.image.load('assets/images/boss.png').convert_alpha()
 greenIMG = pygame.image.load('assets/images/greenSq.png').convert_alpha()
 brownIMG = pygame.image.load('assets/images/brownSq.png').convert_alpha()
 turretIMG = pygame.image.load('assets/images/turret.png').convert_alpha()
@@ -1191,21 +1386,25 @@ plusIMG = pygame.transform.scale(plusIMG, (32, 32))
 greenTile = Tile('green', greenIMG)
 brownTile = Tile('brown', brownIMG)
 
-# Create blank lists for towers and enemies to be stored in
-towers = []
-enemies = []
-
 # Creates map
 map = Map()
 
 # Create instance of player class
 player = Player()
 
+# Enemy spawn delay variables
+count = 0
+spawnDelay = 120
+delay = 1
+
 # Define main buttons
-RCTD =  RCTDButton()
+#RCTD =  RCTDButton()
 
 # Define main menu buttons
-mainMenu = [createMapButton(), playMapButton(), RCTDButton(), upgradePageButton()]
+mainMenu = [createMapButton(800, 320), playMapButton(800, 470), RCTDButton(), upgradePageButton(800, 620)]
+
+# Define game over screen buttons
+gameOver = [RCTDButton(), upgradePageButton(695, 600), playMapButton(905, 600)]
 
 # Define upgrade menu buttons
 upgradeMenu = [RCTDButton()]
@@ -1235,15 +1434,17 @@ while run:
 
 	elif player.state == 'playMap' and map.created:
 		gameLoop()
+	
+	elif player.state == 'gameOver':
+		gameOverScreen()
 
 	elif player.state == 'playMap':
+		player.state = 'menu'
 		print('Must create map first')
 
 	elif player.state == 'upgradeMenu':
 		upgradeMenuLoop()
 
-
-	player.state = 'menu'
 	
 	pygame.display.update()
 	 
