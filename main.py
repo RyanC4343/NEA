@@ -7,7 +7,7 @@ pygame.init()
 SCREENWIDTH = 1600
 SCREENHEIGHT = 1000
 SCREENSIZE = [SCREENWIDTH, SCREENHEIGHT]
-FPS = 200
+FPS = 80
 font = pygame.font.Font('freesansbold.ttf', 32)
 
 # Create screen
