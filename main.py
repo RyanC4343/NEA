@@ -7,7 +7,7 @@ pygame.init()
 SCREENWIDTH = 1600
 SCREENHEIGHT = 1000
 SCREENSIZE = [SCREENWIDTH, SCREENHEIGHT]
-FPS = 80
+FPS = 200
 font = pygame.font.Font('freesansbold.ttf', 32)
 
 # Create screen
@@ -629,14 +629,15 @@ class Boss(Enemy):
 	def __init__(self):
 		# Takes image for boss
 		image = bossIMG
+		hp = 150
 
 		# Calls enemy class initiation with image, type, walk speed and health
-		super().__init__(image, 'boss', 1, 2, 150)
+		super().__init__(image, 'boss', 1, 2, hp)
 
 		# Define enemy dimensions for use in rotation function
 		self.size = 45
 
-		self.lives = self.lives * (1.4 ** player.getWave() // 10)
+		self.lives = hp * (1.25 ** (player.getWave() // 2))
 		self.score = self.lives
 
 
@@ -966,8 +967,8 @@ def newWave():
 	else:
 		# Waves above 50: Exponentially harder - enemies double every 10 waves
 		soldiers = 20 * (2 ** ((currentWave - 50) // 10))  # Double soldiers every 10 waves
-		tanks = 10 * (2 ** ((currentWave - 50) // 15))  # Double tanks every 15 waves
-		bosses = 1 * (2 ** ((currentWave - 50) // 20))  # Double bosses every 20 waves
+		tanks = 10 * (2 ** ((currentWave - 50) // 5))  # Double tanks every 5 waves
+		bosses = 1 * (2 ** ((currentWave - 50) // 10))  # Double bosses every 10 waves
 		wave = (['soldier'] * soldiers) + (['tank'] * tanks) + (['boss'] * bosses)
 	
 	return wave
@@ -992,14 +993,16 @@ def displayLiveStats():
 	SCREEN.blit(waveText, waveTextrect)
 
 def displayGameOverStats():
+	player.resetScore()
+	player.scoreInc(10000000)
 	# Blank rectangle
-	pygame.draw.rect(SCREEN, 'white', pygame.Rect(733, 330, 140 + (5 * len(str(player.getScore()))), 110))
+	pygame.draw.rect(SCREEN, 'white', pygame.Rect(733, 330, 115 + (20 * len(str(player.getScore()))), 110))
 
 	# Score text display
 	scoreText = font.render('Score: '+str(player.getScore()), True, 'black')
 	scoreTextrect = scoreText.get_rect()
 	# Set position
-	scoreTextrect.center = (800, 350)
+	scoreTextrect.topleft = (737, 334)
 	SCREEN.blit(scoreText, scoreTextrect)
 
 	# Wave text display
@@ -1202,14 +1205,18 @@ def gameLoop():
 		pygame.display.update()
 		CLOCK.tick(FPS)
 	
-
+# Function to clear stats for new game
 def newGame():
+	# Define global variables
 	global wave, enemies
+	# Reset game stats
 	player.setLives(5)
 	player.resetScore()
 	player.resetWave()
 	wave = newWave()
+	# Clear enemies
 	enemies = []
+	# Clear towers - not base/spawn
 	map.clearTowers()
 
 
