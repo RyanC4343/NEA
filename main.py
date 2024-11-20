@@ -7,7 +7,7 @@ pygame.init()
 SCREENWIDTH = 1600
 SCREENHEIGHT = 1000
 SCREENSIZE = [SCREENWIDTH, SCREENHEIGHT]
-FPS = 200
+FPS = 60
 font = pygame.font.Font('freesansbold.ttf', 32)
 
 # Create screen
@@ -993,8 +993,6 @@ def displayLiveStats():
 	SCREEN.blit(waveText, waveTextrect)
 
 def displayGameOverStats():
-	player.resetScore()
-	player.scoreInc(10000000)
 	# Blank rectangle
 	pygame.draw.rect(SCREEN, 'white', pygame.Rect(733, 330, 115 + (20 * len(str(player.getScore()))), 110))
 
@@ -1009,7 +1007,7 @@ def displayGameOverStats():
 	waveText = font.render('Wave: '+str(player.getWave()), True, 'black')
 	waveTextrect = waveText.get_rect()
 	# Set position
-	waveTextrect.center = (800, 420)
+	waveTextrect.topleft = (737, 405)
 	SCREEN.blit(waveText, waveTextrect)
 
 
