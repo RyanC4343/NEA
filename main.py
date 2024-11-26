@@ -82,10 +82,28 @@ class Map():
 		self.rows = y
 		self.created = False
 		self.waypoints = []
+		self.toggleRangeVar = False
+		self.togglecd = 5
 
 		# Creates blank array
-		self.array = [] 
+		self.array = []
+
+	def toggleRange(self):
+
+		self.togglecd = 4
+		if self.toggleRangeVar == False:
+			self.toggleRangeVar = True
+		else:
+			self.toggleRangeVar = False
 		
+		for row in range(self.columns):
+			for tile in range(self.rows):
+				# If tile already free, move on
+				if self.array[row][tile][1] != 'free':
+					# If not - check if type is base or spawn
+					if self.array[row][tile][1].type != 'base' and self.array[row][tile][1].type != 'spawn':
+						# If not, set range to toggle variable
+						self.array[row][tile][1].showRange = self.toggleRangeVar
 
 	def newMap(self):
 		# Clear waypoints and map array
@@ -1246,9 +1264,16 @@ def gameUpdate():
 			return
 		
 		# If user clicks, tower build function called and range show
-		elif events.type == pygame.MOUSEBUTTONDOWN:
+		elif pygame.mouse.get_pressed()[0]:
 			build()
 			showRange()
+		
+		elif pygame.key.get_pressed()[pygame.K_c] and map.togglecd <= 0:
+			map.toggleRange()
+		
+	if map.togglecd > 0:
+		map.togglecd -= 1
+		
 
 	# Prints map
 	map.printMap()
@@ -1270,7 +1295,7 @@ def gameUpdate():
 
 				# Deletes enemy
 				enemies.pop(instance)
-				return
+				#return
 			else:
 				# If enemy not out of lives then prints enemy to screen
 				enemy.print()
