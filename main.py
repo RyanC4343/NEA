@@ -855,8 +855,39 @@ class towerUpgrade():
 		if self.cd != 0:
 			self.cd -= 1
 
-		
+# Create hotbar for tower placement
+class Hotbar():
+	def __init__(self):
+		# Define height, width and rect
+		self.height = 800
+		self.width = 100
+		self.rect = pygame.Rect(0, 0, self.height, self.width)
+		# Define toggle variable - show
+		self.__show = False
 
+		# Dictionary of towers and their images and attributes
+		self.towers = [
+			{'name' : 'Basic Turret', 'image' : machineGunIMG, 'quantity' : 1, 'cost' : 1},
+			{'name' : 'Machine Gun', 'image' : turretIMG, 'quantity' : 1, 'cost' : 2},
+			{'name' : 'Other', 'image' : None, 'quantity' : 0, 'cost' : 0}
+
+		]
+
+	def toggle(self):
+		# Checks show variable and changes accordingly
+		if self.__show == True:
+			self.__show = False
+
+		else:
+			self.__show = True
+	
+	def print(self):
+		# Check if show true, if not then exit function
+		if self.__show == False:
+			return
+
+		# Otherwise prints
+		pygame.draw.rect(SCREEN, 'white', self.rect)
 
 	
 # Build tower procedure
