@@ -89,13 +89,16 @@ class Map():
 		self.array = []
 
 	def toggleRange(self):
-
+		# Set cool down if called
 		self.togglecd = 4
+		
+		# Toggle range variable
 		if self.toggleRangeVar == False:
 			self.toggleRangeVar = True
 		else:
 			self.toggleRangeVar = False
 		
+		# Loop through tiles
 		for row in range(self.columns):
 			for tile in range(self.rows):
 				# If tile already free, move on
@@ -1268,9 +1271,12 @@ def gameUpdate():
 			build()
 			showRange()
 		
+		# Checks for range toggle
 		elif pygame.key.get_pressed()[pygame.K_c] and map.togglecd <= 0:
+			# Calls range toggle
 			map.toggleRange()
-		
+	
+	# Decrease toggle cool down
 	if map.togglecd > 0:
 		map.togglecd -= 1
 		
