@@ -1,4 +1,4 @@
-import pygame, time
+import pygame
 
 # Initialise pygame
 pygame.init()
@@ -9,6 +9,7 @@ SCREENHEIGHT = 1000
 SCREENSIZE = [SCREENWIDTH, SCREENHEIGHT]
 FPS = 60
 font = pygame.font.Font('freesansbold.ttf', 32)
+fontSmall = pygame.font.Font('freesansbold.ttf', 18)
 
 # Create screen
 
@@ -860,17 +861,28 @@ class Hotbar():
 	def __init__(self):
 		# Define height, width and rect
 		self.height = 800
-		self.width = 100
-		self.rect = pygame.Rect(0, 0, self.height, self.width)
+		self.width = 180
+		self.rect = pygame.Rect(0, 100, self.width, self.height)
 		# Define toggle variable - show
-		self.__show = False
+		self.__show = True
+
 
 		# Dictionary of towers and their images and attributes
-		self.towers = [
-			{'name' : 'Basic Turret', 'image' : machineGunIMG, 'quantity' : 1, 'cost' : 1},
-			{'name' : 'Machine Gun', 'image' : turretIMG, 'quantity' : 1, 'cost' : 2},
-			{'name' : 'Other', 'image' : None, 'quantity' : 0, 'cost' : 0}
+#		self.towersDict = [
+#			{'name' : 'Basic Turret', 'image' : machineGunIMG, 'quantity' : 1, 'cost' : 1},
+#			{'name' : 'Machine Gun', 'image' : turretIMG, 'quantity' : 1, 'cost' : 2},
+#			{'name' : 'Other', 'image' : None, 'quantity' : 0, 'cost' : 0},
+#			{'name' : 'Other', 'image' : None, 'quantity' : 0, 'cost' : 0}
+#		]
 
+		size = (150, 150)
+		# Testing dictionary
+
+		machineGun = pygame.transform.scale(machineGunIMG, size)
+		turret = pygame.transform.scale(turretIMG, size)
+		self.towersDict = [
+			{'name' : 'Basic Turret', 'image' : turret, 'quantity' : 1, 'cost' : 1},
+			{'name' : 'Machine Gun', 'image' : machineGun, 'quantity' : 1, 'cost' : 2}
 		]
 
 	def toggle(self):
@@ -889,7 +901,15 @@ class Hotbar():
 		# Otherwise prints
 		pygame.draw.rect(SCREEN, 'white', self.rect)
 
-	
+		for index, tower in enumerate(self.towersDict):
+			pos = (10, 110 + ((index) * 180))
+			# Prints tower image in column,
+			SCREEN.blit(tower['image'], pos)
+			# Renders and prints quantity of towers to same location
+			SCREEN.blit(fontSmall.render(str(tower['quantity']), True, 'black'), pos)
+			# Renders and prints costs of towers to location
+			SCREEN.blit(fontSmall.render(('cost: '+str(tower['cost'])), True, 'black'), (pos[0] + 100, pos[1]))
+
 # Build tower procedure
 def build(): 
 	# Get mouse position
@@ -1227,7 +1247,8 @@ To place your base: right click on either green tile or last clicked tile""")
 		# Map creation update screen function
 		mapCreateUpdate()
 		pygame.display.update()
-		time.sleep(2)
+		for frame in range(132):
+			CLOCK.tick(FPS)
 
 		if map.created == True:
 			player.state = 'menu'
@@ -1484,7 +1505,30 @@ blankLevels = towerUpgrade('', 0, 0)
 
 turretUpgrades = [basicTurretLevels, machineTurretLevels]
 
-# Game loop for testing
+
+# Testing game loop
+
+testbar = Hotbar()
+
+test = True
+while test:	 
+	# Check for quit
+	for event in pygame.event.get():	
+		if event.type == pygame.QUIT:
+			pygame.quit()
+			run = False
+			break
+
+	SCREEN.fill('green')
+	# Run test section
+	testbar.print()
+
+	pygame.display.update()
+
+
+
+
+# Game loop
 run = True
 while run:
 
