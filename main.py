@@ -750,6 +750,7 @@ class Button():
 			# Check for mouse press when mouse over button
 			if pygame.mouse.get_pressed()[0]:
 				self.press()
+				colour = self.hoverColour
 			else:
 				# Change button colour if no click
 				colour = self.hoverColour
@@ -823,16 +824,17 @@ class buyTower(Button):
 			if pygame.mouse.get_pressed()[0]:
 				# Gets tower type when pressed
 				tower = self.press()
+				colour = self.hoverColour
 				# Returns tower type
 			else:
 				# Change button colour if no click
-				self.colourChange('green')
+				colour = self.hoverColour
 		else:
 			# Otherwise default button colour
-			self.colourChange(self.col)
+			colour = self.colour
 
 		# Draw button rect with colour
-		pygame.draw.rect(SCREEN, self.colour, self.rect)
+		pygame.draw.rect(SCREEN, colour, self.rect)
 		# Output text
 		SCREEN.blit(self.text, self.textrect)
 
@@ -840,26 +842,36 @@ class buyTower(Button):
 
 class expandHotbar(Button):
 	def __init__(self):
+		# Call parent class init, text = '>'
 		super().__init__(7, SCREENHEIGHT // 2, 20, 15, '>', 'black')
+		# Default show to true
 		self.show = True
 		self.hoverColour = 'blue'
 
 	def press(self):
+		# Change self show to false
 		self.show = False
-		hotbar.show = True
+		# Toggle hotbar show
+		hotbar.toggle()
+		# Change collapse button show
 		hotbar.collapse.show = True
 
 
 
 class collapseHotbar(Button):
 	def __init__(self):
+		# Call parent class init, text = '<'
 		super().__init__(187, SCREENHEIGHT // 2, 20, 15, '<', 'white')
+		# Default show to false
 		self.show = False
 		self.hoverColour = 'blue'
 
 	def press(self):
+		# Change self show to false
 		self.show = False
+		# Toggle hotbar show
 		hotbar.toggle()
+		# Change expand button 
 		hotbar.expand.show = True
 
 class towerUpgrade():
@@ -889,7 +901,7 @@ class towerUpgrade():
 		# Get mouse position
 		mx, my = pygame.mouse.get_pos()
 		
-		# Loops through the text lidt
+		# Loops through the text list
 		for row in range(len(text)):
 			for column in range(len(text[row])):
 				# Checks the column
@@ -958,7 +970,7 @@ class Hotbar():
 		]
 
 		for tower in range(len(self.towersDict)):
-			newButton = buyTower(160, (110 + (tower * 180)), self.towersDict[tower]['name'])
+			newButton = buyTower(160, (250 + (tower * 180)), self.towersDict[tower]['name'])
 			self.towersDict[tower]['button'] = newButton
 
 	def toggle(self):
