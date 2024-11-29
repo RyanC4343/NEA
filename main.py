@@ -724,7 +724,7 @@ class Button():
 	def __init__(self, x, y, height, width, text, colour):
 		
 		self.colour = colour
-		self.col = colour
+		self.hoverColour = 'green'
 		
 		# Render text parameter for button as text
 		self.text = font.render(text, True, 'white')
@@ -752,13 +752,13 @@ class Button():
 				self.press()
 			else:
 				# Change button colour if no click
-				self.colourChange('green')
+				colour = self.hoverColour
 		else:
 			# Otherwise default button colour
-			self.colourChange(self.col)
+			colour = self.colour
 
 		# Draw button rect with colour
-		pygame.draw.rect(SCREEN, self.colour, self.rect)
+		pygame.draw.rect(SCREEN, colour, self.rect)
 		# Output text
 		SCREEN.blit(self.text, self.textrect)
 
@@ -804,14 +804,68 @@ class upgradePageButton(Button):
 	def press(self):
 		player.state = 'upgradeMenu'
 
+class buyTower(Button):
+	def __init__(self, x, y, tower):
+		super().__init__(x, y, 30, 35, 'Buy', 'black')
+		self.tower = tower
+
+	def press(self):
+		return self.tower
+
+	# Create print function for button
+	def print(self):
+		# Mouse position
+		mPos = pygame.mouse.get_pos()
+		tower = False
+		# Check for mouse hover
+		if self.rect.collidepoint(mPos):
+			# Check for mouse press when mouse over button
+			if pygame.mouse.get_pressed()[0]:
+				# Gets tower type when pressed
+				tower = self.press()
+				# Returns tower type
+			else:
+				# Change button colour if no click
+				self.colourChange('green')
+		else:
+			# Otherwise default button colour
+			self.colourChange(self.col)
+
+		# Draw button rect with colour
+		pygame.draw.rect(SCREEN, self.colour, self.rect)
+		# Output text
+		SCREEN.blit(self.text, self.textrect)
+
+		return tower
+
+class expandHotbar(Button):
+	def __init__(self):
+		super().__init__(7, SCREENHEIGHT // 2, 20, 15, '>', 'black')
+		self.show = True
+		self.hoverColour = 'blue'
+
+	def press(self):
+		self.show = False
+		hotbar.show = True
+		hotbar.collapse.show = True
+
+
+
+class collapseHotbar(Button):
+	def __init__(self):
+		super().__init__(187, SCREENHEIGHT // 2, 20, 15, '<', 'white')
+		self.show = False
+		self.hoverColour = 'blue'
+
+	def press(self):
+		self.show = False
+		hotbar.toggle()
+		hotbar.expand.show = True
 
 class towerUpgrade():
 	def __init__(self, towerName, x, y):
 		self.towerName = towerName
-		# Set multipliers for damage, range and rate of fire
-		self.damageMult = 1
-		self.rangeMult = 1
-		self.ROFMult = 1
+		# Set levels for damage, range and rate of fire
 		self.damageLevel = 1
 		self.rangeLevel = 1
 		self.ROFLevel = 1
@@ -829,30 +883,44 @@ class towerUpgrade():
 		# Renders and prints tower name text
 		SCREEN.blit((font.render(self.towerName, True, "blue")), (x + (0.5 * xGap), y))
 
+		# Set text for the attributes and levels
 		text = [['Range', self.rangeLevel], ['Damage', self.damageLevel], ['Fire rate', self.ROFLevel]]
-
+		
+		# Get mouse position
 		mx, my = pygame.mouse.get_pos()
 		
+		# Loops through the text lidt
 		for row in range(len(text)):
 			for column in range(len(text[row])):
+				# Checks the column
 				if column == 1:
+					# Renders and outputs the text level, positions scales with column and row
 					SCREEN.blit((font.render(str(text[row][column]) + '/' + str(self.maxLevel), True, "blue")), (x + ((column) * xGap), y + ((row + 1) * yGap)))
 				else:
+					# Prints text
 					SCREEN.blit((font.render(str(text[row][column]), True, "blue")), (x + ((column) * xGap), y + ((row + 1) * yGap)))
+
+			# Prints button image when level less thn max level
 			if text[row][1] < self.maxLevel:
+				# Gets position of image
 				imagePos = [(x + ((column + 0.58) * xGap)), (y + ((row + 1) * yGap))]
+				# Prints image
 				SCREEN.blit(plusIMG, (imagePos))
 
-
-
+				# Checks for click in the range of button
 				if mx >= imagePos[0] and mx <= imagePos[0] + 32 and my >= imagePos[1] and my <= imagePos[1] + 32 and pygame.mouse.get_pressed()[0] and self.cd == 0:
+					# Resets cool down - needed so that doesn't insta-click and spam the button
 					self.cd = 10
+
+					# Checks row and increases appropriate attribute
 					if row == 0:
 						self.rangeLevel += 1
 					elif row == 1:
 						self.damageLevel += 1
 					elif row == 2:
 						self.ROFLevel += 1
+		
+		# Decreases cool down if not 0
 		if self.cd != 0:
 			self.cd -= 1
 
@@ -864,8 +932,12 @@ class Hotbar():
 		self.width = 180
 		self.rect = pygame.Rect(0, 100, self.width, self.height)
 		# Define toggle variable - show
-		self.__show = True
+		self.__show = False
 
+		self.collapse = collapseHotbar()
+		self.expand = expandHotbar()
+
+			
 
 		# Dictionary of towers and their images and attributes
 #		self.towersDict = [
@@ -885,6 +957,10 @@ class Hotbar():
 			{'name' : 'Machine Gun', 'image' : machineGun, 'quantity' : 1, 'cost' : 2}
 		]
 
+		for tower in range(len(self.towersDict)):
+			newButton = buyTower(160, (110 + (tower * 180)), self.towersDict[tower]['name'])
+			self.towersDict[tower]['button'] = newButton
+
 	def toggle(self):
 		# Checks show variable and changes accordingly
 		if self.__show == True:
@@ -892,10 +968,12 @@ class Hotbar():
 
 		else:
 			self.__show = True
+
 	
 	def print(self):
 		# Check if show true, if not then exit function
 		if self.__show == False:
+			self.expand.print()
 			return
 
 		# Otherwise prints
@@ -909,6 +987,20 @@ class Hotbar():
 			SCREEN.blit(fontSmall.render(str(tower['quantity']), True, 'black'), pos)
 			# Renders and prints costs of towers to location
 			SCREEN.blit(fontSmall.render(('cost: '+str(tower['cost'])), True, 'black'), (pos[0] + 100, pos[1]))
+
+		for index in range(len(self.towersDict)):
+			tower = self.towersDict[index]['button'].print()
+			if tower != False:
+				lives = player.getLives()
+				cost = self.towersDict[index]['cost']
+				if lives > cost:
+					self.towersDict[index]['quantity'] += 1
+					for x in range(cost):
+						player.lifeLoss()
+				else:
+					print('Insufficient funds')
+
+			self.collapse.print()
 
 # Build tower procedure
 def build(): 
@@ -1508,7 +1600,7 @@ turretUpgrades = [basicTurretLevels, machineTurretLevels]
 
 # Testing game loop
 
-testbar = Hotbar()
+hotbar = Hotbar()
 
 test = True
 while test:	 
@@ -1521,9 +1613,10 @@ while test:
 
 	SCREEN.fill('green')
 	# Run test section
-	testbar.print()
+	hotbar.print()
 
 	pygame.display.update()
+	CLOCK.tick(FPS)
 
 
 
