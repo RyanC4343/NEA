@@ -721,13 +721,14 @@ class Spawn(Tower):
 # Create button parent class
 class Button():
 	# Define init case
-	def __init__(self, x, y, height, width, text, colour):
+	def __init__(self, x, y, height, width, text, colour, textColour = 'white'):
 		
 		self.colour = colour
+		self.textColour = textColour
 		self.hoverColour = 'green'
 		
 		# Render text parameter for button as text
-		self.text = font.render(text, True, 'white')
+		self.text = font.render(text, True, self.textColour)
 
 		# Scale text to fit into button dimensions
 		self.text = pygame.transform.scale(self.text, (height - 2, width - 4))
@@ -843,7 +844,7 @@ class buyTower(Button):
 class expandHotbar(Button):
 	def __init__(self):
 		# Call parent class init, text = '>'
-		super().__init__(7, SCREENHEIGHT // 2, 20, 15, '>', 'black')
+		super().__init__(7, SCREENHEIGHT // 2, 20, 32, '>', 'white', 'black')
 		# Default show to true
 		self.show = True
 		self.hoverColour = 'blue'
@@ -861,7 +862,7 @@ class expandHotbar(Button):
 class collapseHotbar(Button):
 	def __init__(self):
 		# Call parent class init, text = '<'
-		super().__init__(187, SCREENHEIGHT // 2, 20, 15, '<', 'white')
+		super().__init__(187, SCREENHEIGHT // 2, 20, 32, '<', 'white', 'black')
 		# Default show to false
 		self.show = False
 		self.hoverColour = 'blue'
@@ -946,8 +947,13 @@ class Hotbar():
 		# Define toggle variable - show
 		self.__show = False
 
+		# Expand and collapse buttons
 		self.collapse = collapseHotbar()
 		self.expand = expandHotbar()
+
+		# Cool down variables
+		self.cd = 10
+		self.cdTimer = 0
 
 			
 
@@ -977,7 +983,6 @@ class Hotbar():
 		# Checks show variable and changes accordingly
 		if self.__show == True:
 			self.__show = False
-
 		else:
 			self.__show = True
 
@@ -985,8 +990,12 @@ class Hotbar():
 	def print(self):
 		# Check if show true, if not then exit function
 		if self.__show == False:
+			# Prints expand button - this also checks for a press
 			self.expand.print()
 			return
+
+		# Prints button before hotbar
+		self.collapse.print()
 
 		# Otherwise prints
 		pygame.draw.rect(SCREEN, 'white', self.rect)
@@ -1000,19 +1009,37 @@ class Hotbar():
 			# Renders and prints costs of towers to location
 			SCREEN.blit(fontSmall.render(('cost: '+str(tower['cost'])), True, 'black'), (pos[0] + 100, pos[1]))
 
+		
+		# Tower printing and purchase check
 		for index in range(len(self.towersDict)):
+			# Prints tower out, this also returns the tower type if 'buy' is pressed
 			tower = self.towersDict[index]['button'].print()
-			if tower != False:
+			
+			# If no tower pressed, returns False 
+			if tower != False and self.cdTimer == 0:
+				# Gets lives and cost of tower
 				lives = player.getLives()
 				cost = self.towersDict[index]['cost']
+
+				# Compares lives and cost
+				# Strictly >, if equal to, could end up with 0 lives
 				if lives > cost:
+					# Increases quantity of tower by 1
 					self.towersDict[index]['quantity'] += 1
+					self.cdTimer = self.cd
+					# Decrease player lives by appropriate amount
 					for x in range(cost):
 						player.lifeLoss()
+
+				# Display message to user
 				else:
 					print('Insufficient funds')
 
-			self.collapse.print()
+		# Decrease cool down
+		if self.cdTimer > 0:
+			self.cdTimer -= 1
+
+
 
 # Build tower procedure
 def build(): 
@@ -1615,6 +1642,7 @@ turretUpgrades = [basicTurretLevels, machineTurretLevels]
 hotbar = Hotbar()
 
 test = True
+player.setLives(5)
 while test:	 
 	# Check for quit
 	for event in pygame.event.get():	
@@ -1626,6 +1654,7 @@ while test:
 	SCREEN.fill('green')
 	# Run test section
 	hotbar.print()
+	displayLiveStats()
 
 	pygame.display.update()
 	CLOCK.tick(FPS)
@@ -1634,7 +1663,7 @@ while test:
 
 
 # Game loop
-run = True
+run = False
 while run:
 
 	SCREEN.fill('white')
