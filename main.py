@@ -49,6 +49,12 @@ class Player():
 			# Set lives to parameter
 			self.__lives = num
 
+	def incLives(self, num):
+		# Check value > 0
+		if num > 0:
+			# Increase lives by number
+			self.__lives += num
+
 	def gameOver(self):
 		# Change state to game over
 		self.state = 'gameOver'
@@ -1153,8 +1159,13 @@ def spawnEnemy():
 
 	# Check if list of enemies is empty
 	if len(wave) == 0 and len(enemies) == 0:
-		# Iterates to next wave, creates new wave
+		# Gets value to increase lives by		
+		livesInc = getLivesInc(player.getWave())
+		# Increases lives
+		player.incLives(livesInc)
+		# Increments wave counter
 		player.waveInc()
+		# Creates new wave
 		wave = newWave()
 		
 	
@@ -1201,6 +1212,34 @@ def spawnEnemy():
 				elif type == 'boss':
 					delay = 200
 
+
+def getLivesInc(wave):
+	# Between 1 and 4, gain 2 lives
+	if 1 <= wave <= 4:
+		return 2
+	# Between and 9, gain 3
+	elif 6 <= wave <= 9:
+		return 3
+	# Between 11 and 14, gain 4
+	elif 11 <= wave <= 14:
+		return 4
+	# Check if wave in list (5, 10) or between 15 and 20, gain 5 lives
+	elif wave in {5, 10} or 15 <= wave <= 20:
+		return 5
+	# Between 25 and 44
+	elif 25 <= wave <= 44:
+		# 25-34 gain 6 (0 // 10 = 0, 0 + 6 = 6)
+		# 35-44 gain 7 (5 // 10 = 1, 1 + 6 = 7), etc.
+		# For each tenth wave, gain one extra life
+		return (wave - 25) // 10 + 6
+	# After wave 44, get 8 lives
+	elif 45 <= wave <= 60:
+		return 8
+	# After wave 60, gain no lives
+	else:
+		return 0
+
+	
 
 def newWave():
 	global spawnDelay
