@@ -954,6 +954,7 @@ class Hotbar():
 		# Cool down variables
 		self.cd = 10
 		self.cdTimer = 0
+		self.placing = 'none'
 
 			
 
@@ -971,11 +972,13 @@ class Hotbar():
 		machineGun = pygame.transform.scale(machineGunIMG, size)
 		turret = pygame.transform.scale(turretIMG, size)
 		self.towersDict = [
-			{'name' : 'Basic Turret', 'image' : turret, 'quantity' : 1, 'cost' : 1},
-			{'name' : 'Machine Gun', 'image' : machineGun, 'quantity' : 1, 'cost' : 2}
+			{'name' : 'Basic Turret', 'image': turret, 'imageRect' : turret.get_rect(), 'quantity' : 1, 'cost' : 1},
+			{'name' : 'Machine Gun',  'image': machineGun,'imageRect' : machineGun.get_rect(), 'quantity' : 1, 'cost' : 2}
 		]
 
 		for tower in range(len(self.towersDict)):
+			pos = (10, 110 + ((tower) * 180))
+			self.towersDict[tower]['imageRect'].topleft = pos
 			newButton = buyTower(160, (250 + (tower * 180)), self.towersDict[tower]['name'])
 			self.towersDict[tower]['button'] = newButton
 
@@ -989,10 +992,57 @@ class Hotbar():
 	
 	def print(self):
 		# Check if show true, if not then exit function
-		if self.__show == False:
+		if self.__show == False and self.placing == 'none':
 			# Prints expand button - this also checks for a press
 			self.expand.print()
 			return
+
+		# Check for tower placement
+		if self.placing != 'none':
+			# If left click
+			if pygame.mouse.get_pressed()[0]:
+				# If escape key pressed, cancels tower dragging
+				if pygame.key.get_pressed()[pygame.K_ESCAPE]:
+					self.placing = 'none'
+				
+				mPos = pygame.mouse.get_pos()
+				# Align position to print tower with centre of mouse
+				pos = (mPos[0] - 22, mPos[1] - 22)
+
+				# Check tower placement tower type and print image
+				if self.placing == 'Machine Gun':
+					SCREEN.blit(machineGunIMG, (pos))
+
+				elif self.placing == 'Basic Turret':
+					SCREEN.blit(turretIMG, (pos))
+
+
+			# If not placing tower and not left clicking
+			elif not pygame.mouse.get_pressed()[0]:
+				# Get mouse position
+				mPos = pygame.mouse.get_pos()
+				# Get tower
+				tower = self.placing
+				# Change placing - no longer holding left click
+				self.placing = 'none'
+
+				# Checks tile for building tower
+				if checkTile(mPos[0], mPos[1]):
+					# Decreases quantity of relevant tower
+					for row in self.towersDict:
+						if row['name'] == tower:
+							row['quantity'] -= 1
+
+					# Builds appropriate tower
+					if tower == 'Machine Gun':
+						MachineTurret(mPos[0], mPos[1])
+
+					elif tower == 'Basic Turret':
+						BasicTurret(mPos[0], mPos[1])
+
+			# Exits print function, do not want to print hotbar if placing
+			return
+
 
 		# Prints button before hotbar
 		self.collapse.print()
@@ -1003,42 +1053,64 @@ class Hotbar():
 		for index, tower in enumerate(self.towersDict):
 			pos = (10, 110 + ((index) * 180))
 			# Prints tower image in column,
-			SCREEN.blit(tower['image'], pos)
+			SCREEN.blit(tower['image'], tower['imageRect'].topleft)
 			# Renders and prints quantity of towers to same location
 			SCREEN.blit(fontSmall.render(str(tower['quantity']), True, 'black'), pos)
 			# Renders and prints costs of towers to location
 			SCREEN.blit(fontSmall.render(('cost: '+str(tower['cost'])), True, 'black'), (pos[0] + 100, pos[1]))
 
-		
+		buyAttempt = False
+
 		# Tower printing and purchase check
 		for index in range(len(self.towersDict)):
 			# Prints tower out, this also returns the tower type if 'buy' is pressed
 			tower = self.towersDict[index]['button'].print()
 			
 			# If no tower pressed, returns False 
-			if tower != False and self.cdTimer == 0:
-				# Gets lives and cost of tower
-				lives = player.getLives()
-				cost = self.towersDict[index]['cost']
+			if tower != False and self.placing == 'none':
+				# Buy attempt is now true regardless of cool down
+				buyAttempt = True
+				# Checks cool down
+				if self.cdTimer == 0:
+					# Gets lives and cost of tower
+					lives = player.getLives()
+					cost = self.towersDict[index]['cost']
 
-				# Compares lives and cost
-				# Strictly >, if equal to, could end up with 0 lives
-				if lives > cost:
-					# Increases quantity of tower by 1
-					self.towersDict[index]['quantity'] += 1
-					self.cdTimer = self.cd
-					# Decrease player lives by appropriate amount
-					for x in range(cost):
-						player.lifeLoss()
+					# Compares lives and cost
+					# Strictly >, if equal to, could end up with 0 lives
+					if lives > cost:
+						# Increases quantity of tower by 1
+						self.towersDict[index]['quantity'] += 1
+						# Resets cool down timer
+						self.cdTimer = self.cd
 
-				# Display message to user
-				else:
-					print('Insufficient funds')
+						# Decrease player lives by appropriate amount
+						for _ in range(cost):
+							player.lifeLoss()
+
+					else:
+						# Display message to user
+						print('Insufficient funds')
 
 		# Decrease cool down
 		if self.cdTimer > 0:
 			self.cdTimer -= 1
 
+		# Checks for left click and no buy attempt
+		if pygame.mouse.get_pressed()[0] and buyAttempt == False:
+			# Gets current mouse position
+			mPos = pygame.mouse.get_pos()
+			# Loops through towers
+			for tower in self.towersDict:
+				# Checks for collision between image rect of tower and mouse pos
+				if tower['imageRect'].collidepoint(mPos):
+					# Checks own 1+ of the selected tower
+					if tower['quantity'] > 0:
+						# Begins placing
+						self.placing = tower['name']
+					else:
+						# Outputs suitable message if no towers owned
+						print('No towers available')
 
 
 # Build tower procedure
@@ -1182,17 +1254,17 @@ def newWave():
 def displayLiveStats():
 	livesText = font.render('Lives: '+str(player.getLives()), True, 'black')
 	livesTextrect = livesText.get_rect()
-	livesTextrect.topleft = (SCREENWIDTH * 0.9, 30)
+	livesTextrect.topleft = (SCREENWIDTH * 0.9, 18)
 	SCREEN.blit(livesText, livesTextrect)
 
 	scoreText = font.render('Score: '+str(player.getScore()), True, 'black')
 	scoreTextrect = scoreText.get_rect()
-	scoreTextrect.topleft = (SCREENWIDTH * 0.02, 30)
+	scoreTextrect.topleft = (SCREENWIDTH * 0.02, 18)
 	SCREEN.blit(scoreText, scoreTextrect)
 
 	waveText = font.render('Wave: '+str(player.getWave()), True, 'black')
 	waveTextrect = waveText.get_rect()
-	waveTextrect.topleft = (SCREENWIDTH * 0.02, 78)
+	waveTextrect.topleft = (SCREENWIDTH * 0.02, 60)
 	SCREEN.blit(waveText, waveTextrect)
 
 def displayGameOverStats():
@@ -1449,11 +1521,6 @@ def gameUpdate():
 			loop = False
 			return
 		
-		# If user clicks, tower build function called and range show
-		elif pygame.mouse.get_pressed()[0]:
-			build()
-			showRange()
-		
 		# Checks for range toggle
 		elif pygame.key.get_pressed()[pygame.K_c] and map.togglecd <= 0:
 			# Calls range toggle
@@ -1466,6 +1533,7 @@ def gameUpdate():
 
 	# Prints map
 	map.printMap()
+
  
 	# Spawns any enemies	
 	spawnEnemy()
@@ -1505,6 +1573,9 @@ def gameUpdate():
 				instance += 1
 	# Prints towers after printing map and enemies
 	map.printTowers()
+
+	# Prints hotbar
+	hotbar.print()
 
 	# Outputs player stats - score, lives
 	displayLiveStats()
@@ -1598,7 +1669,23 @@ bulletIMG = pygame.image.load('assets/images/bullet.png').convert_alpha()
 baseIMG = pygame.image.load('assets/images/base.png').convert_alpha()
 spawnIMG = pygame.image.load('assets/images/spawn.png').convert_alpha()
 plusIMG = pygame.image.load('assets/images/plusSign.png').convert_alpha()
+
+# Define a size variable for scaling (e.g., (width, height))
+size = (45, 45)
+
+# Scale all images using size variable
+soldierIMG = pygame.transform.scale(soldierIMG, size)
+tankIMG = pygame.transform.scale(tankIMG, size)
+bossIMG = pygame.transform.scale(bossIMG, size)
+greenIMG = pygame.transform.scale(greenIMG, size)
+brownIMG = pygame.transform.scale(brownIMG, size)
+turretIMG = pygame.transform.scale(turretIMG, size)
+machineGunIMG = pygame.transform.scale(machineGunIMG, size)
+bulletIMG = pygame.transform.scale(bulletIMG, size)
+baseIMG = pygame.transform.scale(baseIMG, size)
+spawnIMG = pygame.transform.scale(spawnIMG, size)
 plusIMG = pygame.transform.scale(plusIMG, (32, 32))
+
 
 
 # Create instances of tile class
@@ -1607,6 +1694,9 @@ brownTile = Tile('brown', brownIMG)
 
 # Creates map
 map = Map()
+
+# Creates hotbar
+hotbar = Hotbar()
 
 # Create instance of player class
 player = Player()
@@ -1639,31 +1729,30 @@ turretUpgrades = [basicTurretLevels, machineTurretLevels]
 
 # Testing game loop
 
-hotbar = Hotbar()
-
-test = True
-player.setLives(5)
-while test:	 
-	# Check for quit
-	for event in pygame.event.get():	
-		if event.type == pygame.QUIT:
-			pygame.quit()
-			run = False
-			break
-
-	SCREEN.fill('green')
-	# Run test section
-	hotbar.print()
-	displayLiveStats()
-
-	pygame.display.update()
-	CLOCK.tick(FPS)
+test = False
+if test:
+	player.setLives(5)
+	while test:	 
+		# Check for quit
+		for event in pygame.event.get():	
+			if event.type == pygame.QUIT:
+				pygame.quit()
+				run = False
+				break
+			
+		SCREEN.fill('green')
+		# Run test section
+		hotbar.print()
+		displayLiveStats()
+	
+		pygame.display.update()
+		CLOCK.tick(FPS)
 
 
 
 
 # Game loop
-run = False
+run = True
 while run:
 
 	SCREEN.fill('white')
