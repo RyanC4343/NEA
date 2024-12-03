@@ -1482,7 +1482,7 @@ def gameLoop():
 # Function to clear stats for new game
 def newGame():
 	# Define global variables
-	global wave, enemies
+	global wave, enemies, hotbar
 	# Reset game stats
 	player.setLives(5)
 	player.resetScore()
@@ -1492,6 +1492,8 @@ def newGame():
 	enemies = []
 	# Clear towers - not base/spawn
 	map.clearTowers()
+	# Create new hotbar
+	hotbar = Hotbar()
 
 
 def upgradeMenuLoop():
@@ -1739,12 +1741,12 @@ if test:
 				pygame.quit()
 				run = False
 				break
-			
+
 		SCREEN.fill('green')
 		# Run test section
 		hotbar.print()
 		displayLiveStats()
-	
+
 		pygame.display.update()
 		CLOCK.tick(FPS)
 
