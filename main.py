@@ -1566,6 +1566,8 @@ def gameUpdate():
 		elif pygame.key.get_pressed()[pygame.K_c] and map.togglecd <= 0:
 			# Calls range toggle
 			map.toggleRange()
+		elif pygame.mouse.get_pressed()[0]:
+			showRange()
 	
 	# Decrease toggle cool down
 	if map.togglecd > 0:
