@@ -602,6 +602,7 @@ class Bullet():
 
 class Bomb():
 	def __init__(self, x, y, target, damage = 1000):
+		# Define variables
 		self.target = target
 		self.radius = 20
 		self.x = x
@@ -613,6 +614,7 @@ class Bomb():
 		self.hit = False
 		self.VarHit = 100
 
+		# Calculate movement variables
 		speed = 10
 		disX = self.target[0] - self.x
 		disY = self.target[1] - self.y
