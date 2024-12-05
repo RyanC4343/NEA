@@ -599,6 +599,91 @@ class Bullet():
 		self.rect.x += (disX * 10 / disT) // 2 
 		self.rect.y += (disY * 10 / disT) // 2
 		
+
+class Bomb():
+	def __init__(self, x, y, target, damage = 1000):
+		self.target = target
+		self.radius = 20
+		self.x = x
+		self.y = y
+		self.atTarget = False
+		self.image = None
+		self.explosionRange = 100
+		self.damage = damage
+		self.hit = False
+		self.VarHit = 100
+
+		speed = 10
+		disX = self.target[0] - self.x
+		disY = self.target[1] - self.y
+		disT = abs(disX) + abs(disY)
+		self.dx = (disX * speed) / disT
+		self.dy = (disY * speed) / disT
+
+	def print(self):
+		# If at target location
+		if self.atTarget == True:
+			# Decreases variable by 1
+			self.VarHit -= 1
+			if self.VarHit == 0:
+				# If at 0, sets hit to true and instance deletes
+				self.hit = True
+			# Prints explosion image to screen
+			SCREEN.blit(self.image, (self.x - self.explosionRange, self.y - self.explosionRange))
+			# Exits print loop
+			return
+		
+		# Moves bullet
+		self.move()
+
+		# Create and draw circle, this signifies bomb - 0 at end makes it solid
+		pygame.draw.circle(SCREEN, 'black', (self.x, self.y), self.radius, 0)
+
+
+	def move(self):
+		# Finds total distance to move, abs() gives magnitude of number
+		disT = abs(self.target[0] - self.x) + abs(self.target[1] - self.y)
+
+		if disT <= 10:
+			self.explode()
+			return
+
+		# Updates the rect positions - then displayed to screen in the print function
+		self.x += self.dx
+		self.y += self.dy
+
+
+	def explode(self):
+		print('Explosion')
+		global explosionIMG
+		# Bomb has reached target
+		self.atTarget = True
+		# Sets image and scales to diameter of explosion range
+		self.image = pygame.transform.scale(explosionIMG, (2 * self.explosionRange, 2 * self.explosionRange))
+		# Creates rect out of image
+		self.rect = self.image.get_rect()
+		# Sets rect centre
+		self.rect.center = (self.x + self.radius, self.y + self.radius)
+
+		# Loops through all enemies
+		for enemy in enemies:
+			# Checks if enemy collides with image rect
+			if enemy.rect.colliderect(self.rect):
+				# Gets centre points of enemy and bomb
+				enemyCentre = enemy.rect.center
+				bombCentre = self.rect.center
+				# Gets total distance (not straight line) between bomb and enemy
+				disTotal = abs(enemyCentre[0] - bombCentre[0]) + abs(enemyCentre[1] - bombCentre[1])
+				# Gets a multiplier for the damage done to enemies
+				damageMult = ((self.explosionRange - disTotal)) / (self.explosionRange)
+				# Finds minimum of 2 values, calculated damage done and 10% of bullet damage
+				# This way, enemy in range always gets significant amount of damage done
+				damageDone = min(self.damage * damageMult, self.damage / 10)
+
+				# Deals damage
+				enemy.lives -= damageDone
+
+
 	
 class BasicTurret(Tower):
 	# Uses inheritance of tower class
@@ -617,6 +702,46 @@ class MachineTurret(Tower):
 
 		# Calls tower class initiation with image, type, mouse position, range, cool down and damage
 		super().__init__(image, 'machine', mx, my, 100, 50, 2, machineTurretLevels)
+
+class BombTower(Tower):
+	# Uses inheritance of tower class
+	def __init__(self, mx, my):
+		# Loads image for bomb tower
+		image = bombTowerIMG
+
+		# Calls tower class initiation with image, type, mouse position, range, cool down and damage
+		super().__init__(image, 'bomb', mx, my, 120, 300, 200, bombTowerLevels)
+
+	def print(self):
+		SCREEN.blit(self.image, (self.x * 50, self.y * 50))
+		# Checks to see if range needs to be printed too
+		if self.showRange == True:
+			# Prints range circle
+			pygame.draw.circle(SCREEN, (255, 255, 255), (self.x * 50 + 25, self.y * 50 + 25), self.rangeDist, 2)
+
+		
+		instance = 0
+		for bullet in self.bullets:
+			# Prints bullets
+			bullet.print()
+			# Checks to see if bullet has hit enemy
+			if bullet.hit == True:
+				self.bullets.pop(instance)
+			instance += 1
+
+	def bulletCreate(self, enemy):
+		x = enemy.rect.centerx
+		y = enemy.rect.centery
+		self.bullets.append(Bomb(self.rect.centerx, self.rect.centery, [x, y], self.bulletDMG))
+
+class MegaShot(Tower):
+	# Uses inheritance of tower class
+	def __init__(self, mx, my):
+		# Loads image for bomb tower
+		image = megaTowerIMG
+
+		# Calls tower class initiation with image, type, mouse position, range, cool down and damage
+		super().__init__(image, 'mega', mx, my, 200, 300, bulletDMG, towerUpgrades)
 
 
 class Soldier(Enemy):
@@ -840,10 +965,18 @@ class buyTower(Button):
 			# Otherwise default button colour
 			colour = self.colour
 
-		# Draw button rect with colour
-		pygame.draw.rect(SCREEN, colour, self.rect)
-		# Output text
-		SCREEN.blit(self.text, self.textrect)
+		# Gets player lives and cost of tower
+		lives = player.getLives()
+		for row in hotbar.towersDict:
+			if row['name'] == self.tower:
+				cost = row['cost']
+
+		# If have enough lives to purchase tower, prints buy button
+		if lives > cost:
+			# Draw button rect with colour
+			pygame.draw.rect(SCREEN, colour, self.rect)
+			# Output text
+			SCREEN.blit(self.text, self.textrect)
 
 		return tower
 
@@ -862,6 +995,8 @@ class expandHotbar(Button):
 		hotbar.toggle()
 		# Change collapse button show
 		hotbar.collapse.show = True
+		# Set hotbar cool down
+		hotbar.cdTimer = 30
 
 
 
@@ -977,9 +1112,12 @@ class Hotbar():
 
 		machineGun = pygame.transform.scale(machineGunIMG, size)
 		turret = pygame.transform.scale(turretIMG, size)
+		bombTower = pygame.transform.scale(bombTowerIMG, size)
+
 		self.towersDict = [
 			{'name' : 'Basic Turret', 'image': turret, 'imageRect' : turret.get_rect(), 'quantity' : 1, 'cost' : 1},
-			{'name' : 'Machine Gun',  'image': machineGun,'imageRect' : machineGun.get_rect(), 'quantity' : 1, 'cost' : 2}
+			{'name' : 'Machine Gun',  'image': machineGun,'imageRect' : machineGun.get_rect(), 'quantity' : 1, 'cost' : 2},
+			{'name': 'Bomb Tower',  'image': bombTower,'imageRect' : bombTower.get_rect(), 'quantity' : 1, 'cost' : 4}
 		]
 
 		for tower in range(len(self.towersDict)):
@@ -1022,6 +1160,9 @@ class Hotbar():
 				elif self.placing == 'Basic Turret':
 					SCREEN.blit(turretIMG, (pos))
 
+				elif self.placing == 'Bomb Tower':
+					SCREEN.blit(bombTowerIMG, (pos))
+
 
 			# If not placing tower and not left clicking
 			elif not pygame.mouse.get_pressed()[0]:
@@ -1045,6 +1186,9 @@ class Hotbar():
 
 					elif tower == 'Basic Turret':
 						BasicTurret(mPos[0], mPos[1])
+
+					elif tower == 'Bomb Tower':
+						BombTower(mPos[0], mPos[1])
 
 			# Exits print function, do not want to print hotbar if placing
 			return
@@ -1566,7 +1710,7 @@ def gameUpdate():
 		elif pygame.key.get_pressed()[pygame.K_c] and map.togglecd <= 0:
 			# Calls range toggle
 			map.toggleRange()
-		elif pygame.mouse.get_pressed()[0]:
+		elif pygame.mouse.get_pressed()[0] and hotbar.placing == 'none':
 			showRange()
 	
 	# Decrease toggle cool down
@@ -1712,6 +1856,9 @@ bulletIMG = pygame.image.load('assets/images/bullet.png').convert_alpha()
 baseIMG = pygame.image.load('assets/images/base.png').convert_alpha()
 spawnIMG = pygame.image.load('assets/images/spawn.png').convert_alpha()
 plusIMG = pygame.image.load('assets/images/plusSign.png').convert_alpha()
+bombTowerIMG = pygame.image.load('assets/images/bombTower.png').convert_alpha()
+megaTowerIMG = pygame.image.load('assets/images/megaShot.png').convert_alpha()
+explosionIMG = pygame.image.load('assets/images/explosion.png').convert_alpha()
 
 # Define a size variable for scaling (e.g., (width, height))
 size = (45, 45)
@@ -1727,6 +1874,8 @@ machineGunIMG = pygame.transform.scale(machineGunIMG, size)
 bulletIMG = pygame.transform.scale(bulletIMG, size)
 baseIMG = pygame.transform.scale(baseIMG, size)
 spawnIMG = pygame.transform.scale(spawnIMG, size)
+bombTowerIMG = pygame.transform.scale(bombTowerIMG, size)
+megaTowerIMG = pygame.transform.scale(megaTowerIMG, size)
 plusIMG = pygame.transform.scale(plusIMG, (32, 32))
 
 
@@ -1762,19 +1911,25 @@ gameOver = [RCTDButton(), upgradePageButton(695, 600), playMapButton(905, 600)]
 upgradeMenu = [RCTDButton()]
 
 
-basicTurretLevels = towerUpgrade('Basic Turret', 80, 250)
-machineTurretLevels = towerUpgrade('Machine Gun', 600, 250)
+basicTurretLevels = towerUpgrade('Basic Turret', 60, 250)
+machineTurretLevels = towerUpgrade('Machine Gun', 400, 250)
+bombTowerLevels = towerUpgrade('Bomb Tower', 740, 250)
 # Create blank levels for spawn and base - both classed as turrets
 blankLevels = towerUpgrade('', 0, 0)
 
-turretUpgrades = [basicTurretLevels, machineTurretLevels]
+turretUpgrades = [basicTurretLevels, machineTurretLevels, bombTowerLevels]
 
 
 # Testing game loop
 
 test = False
 if test:
-	player.setLives(5)
+
+	# Testing bomb movement
+
+	test = Bomb(30, 30)
+
+
 	while test:	 
 		# Check for quit
 		for event in pygame.event.get():	
@@ -1782,11 +1937,12 @@ if test:
 				pygame.quit()
 				run = False
 				break
-
-		SCREEN.fill('green')
-		# Run test section
-		hotbar.print()
-		displayLiveStats()
+		# Screen white
+		SCREEN.fill('white')
+		
+		# Move and print bomb
+		test.move()
+		test.print()
 
 		pygame.display.update()
 		CLOCK.tick(FPS)
@@ -1795,7 +1951,11 @@ if test:
 
 
 # Game loop
-run = True
+if test == False:
+	run = True
+else:
+	run = False
+
 while run:
 
 	SCREEN.fill('white')
@@ -1837,6 +1997,3 @@ while run:
 				if button.rect.collidepoint(pos):
 					button.press()
 					break
-
-					
-					
