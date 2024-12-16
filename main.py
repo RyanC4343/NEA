@@ -7,7 +7,7 @@ pygame.init()
 SCREENWIDTH = 1600
 SCREENHEIGHT = 1000
 SCREENSIZE = [SCREENWIDTH, SCREENHEIGHT]
-FPS = 60
+FPS = 600
 font = pygame.font.Font('freesansbold.ttf', 32)
 fontSmall = pygame.font.Font('freesansbold.ttf', 18)
 
@@ -1099,16 +1099,6 @@ class Hotbar():
 		self.cdTimer = 0
 		self.placing = 'none'
 
-			
-
-		# Dictionary of towers and their images and attributes
-#		self.towersDict = [
-#			{'name' : 'Basic Turret', 'image' : machineGunIMG, 'quantity' : 1, 'cost' : 1},
-#			{'name' : 'Machine Gun', 'image' : turretIMG, 'quantity' : 1, 'cost' : 2},
-#			{'name' : 'Other', 'image' : None, 'quantity' : 0, 'cost' : 0},
-#			{'name' : 'Other', 'image' : None, 'quantity' : 0, 'cost' : 0}
-#		]
-
 		size = (150, 150)
 		# Testing dictionary
 
@@ -1134,6 +1124,16 @@ class Hotbar():
 			self.__show = False
 		else:
 			self.__show = True
+
+	def reset(self):
+		# Reset quantity of each tower to 1
+		for tower in self.towersDict:
+			tower['quantity'] = 1
+
+		# Reset key variables
+		self.cdTimer = 10
+		self.placing = 'none'
+		self.__show = False
 
 	
 	def print(self):
@@ -1677,8 +1677,8 @@ def newGame():
 	enemies = []
 	# Clear towers - not base/spawn
 	map.clearTowers()
-	# Create new hotbar
-	hotbar = Hotbar()
+	# Reset hotbar
+	hotbar.reset()
 
 
 def upgradeMenuLoop():
