@@ -7,7 +7,7 @@ pygame.init()
 SCREENWIDTH = 1600
 SCREENHEIGHT = 1000
 SCREENSIZE = [SCREENWIDTH, SCREENHEIGHT]
-FPS = 600
+FPS = 60
 font = pygame.font.Font('freesansbold.ttf', 32)
 fontSmall = pygame.font.Font('freesansbold.ttf', 18)
 
@@ -685,6 +685,38 @@ class Bomb():
 				# Deals damage
 				enemy.lives -= damageDone
 
+class Shot():
+	def __init__(self, x, y, target, damage):
+		# Define key variables
+		self.damage = damage
+		self.target = target
+		# Create rect
+		self.rect = pygame.Rect(0, 0, 10, 10)
+		# Set centre point
+		self.rect.center = (x, y)
+		self.hit = False
+		
+		# Find movement constants (change in y and x values)
+		disT = abs(x - target[0]) + abs(y - target[1])
+		speed = 20
+
+		self.dy = speed * (target[1] - y) / disT
+		self.dx = speed * (target[0] - x) / disT
+
+	def print(self):
+
+		# Move and print projectile
+		self.move()
+
+		pygame.draw.rect(SCREEN, 'white', self.rect)
+
+		# Need to check for collision with enemies
+
+	def move(self):
+		# Move rect point
+		self.rect.centerx += self.dx
+		self.rect.centery += self.dy
+
 
 	
 class BasicTurret(Tower):
@@ -743,8 +775,12 @@ class MegaShot(Tower):
 		image = megaTowerIMG
 
 		# Calls tower class initiation with image, type, mouse position, range, cool down and damage
-		super().__init__(image, 'mega', mx, my, 200, 300, bulletDMG, towerUpgrades)
+		super().__init__(image, 'mega', mx, my, 20000, 500, 1000, megaShotLevels)
 
+
+	def bulletCreate(self, pos):
+		self.bullets.append(Shot(self.rect.centerx, self.rect.centery, pos, self.bulletDMG))
+		
 
 class Soldier(Enemy):
 	# Uses inheritance of enemy class
@@ -762,11 +798,6 @@ class Soldier(Enemy):
 		# Define enemy dimensions for use in rotation function
 		self.size = 20
 
-		# Sets number of lives for solider
-		self.lives = 10
-
-		# Sets score worth for enemy
-		self.score = 10		
 		
 class Tank(Enemy):
 	# Uses inheritance of enemy class
@@ -1916,20 +1947,21 @@ upgradeMenu = [RCTDButton()]
 basicTurretLevels = towerUpgrade('Basic Turret', 60, 250)
 machineTurretLevels = towerUpgrade('Machine Gun', 400, 250)
 bombTowerLevels = towerUpgrade('Bomb Tower', 740, 250)
+megaShotLevels = towerUpgrade('Mega Shot', 1080, 250)
 # Create blank levels for spawn and base - both classed as turrets
 blankLevels = towerUpgrade('', 0, 0)
 
-turretUpgrades = [basicTurretLevels, machineTurretLevels, bombTowerLevels]
+turretUpgrades = [basicTurretLevels, machineTurretLevels, bombTowerLevels, megaShotLevels]
 
 
 # Testing game loop
 
-test = False
+test = True
 if test:
 
 	# Testing bomb movement
 
-	test = Bomb(30, 30)
+	test = Shot(30, 30, (900, 900), 50)
 
 
 	while test:	 
@@ -1940,10 +1972,10 @@ if test:
 				run = False
 				break
 		# Screen white
-		SCREEN.fill('white')
+		SCREEN.fill('black')
 		
-		# Move and print bomb
-		test.move()
+		# Move and print shot
+
 		test.print()
 
 		pygame.display.update()
