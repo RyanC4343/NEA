@@ -82,6 +82,7 @@ class Player():
 
 class Map():
 	def __init__(self):
+		global targetIMG
 		# Calculates width and height in terms of tile dimensions to work out number of columns and rows needed
 		x = SCREENWIDTH // 50 
 		y = SCREENHEIGHT // 50
@@ -92,8 +93,28 @@ class Map():
 		self.toggleRangeVar = False
 		self.togglecd = 5
 
+		self.rect = targetIMG.get_rect()
+		self.rect.center = (SCREENWIDTH / 2, SCREENHEIGHT / 2)
+
+		self.movingTarget = False
+
 		# Creates blank array
 		self.array = []
+
+	def get_targetPos(self):
+		# Returns target position
+		return self.rect.center
+	
+	def printTarget(self):
+		# Prints target image to position
+		SCREEN.blit(targetIMG, self.rect.topleft)
+
+	def moveTarget(self):
+		# Gets mouse position
+		pos = pygame.mouse.get_pos()
+		# Sets mouse position as new center point for target
+		self.rect.center = pos
+
 
 	def toggleRange(self):
 		# Set cool down if called
@@ -656,7 +677,6 @@ class Bomb():
 
 
 	def explode(self):
-		print('Explosion')
 		global explosionIMG
 		# Bomb has reached target
 		self.atTarget = True
@@ -689,7 +709,7 @@ class Shot():
 	def __init__(self, x, y, target, damage):
 		# Define key variables
 		self.damage = damage
-		self.target = target
+		self.target = (600, 600)
 		# Create rect
 		self.rect = pygame.Rect(0, 0, 10, 10)
 		# Set centre point
@@ -704,18 +724,46 @@ class Shot():
 		self.dx = speed * (target[0] - x) / disT
 
 	def print(self):
+		global enemies
 
 		# Move and print projectile
 		self.move()
 
 		pygame.draw.rect(SCREEN, 'white', self.rect)
 
-		# Need to check for collision with enemies
+		# Loops through enemies
+		for i in range(len(enemies)):
+			# Checks for collision between bullet and enemy
+			if enemies[i].rect.colliderect(self.rect):
+				# Gets enemy health
+				hp = enemies[i].lives
+
+				# If enemy health more than bullet damage
+				if hp > self.damage:
+					# Decrease enemy health
+					enemies[i].lives -= self.damage
+					# Delete bullet
+					self.hit = True
+
+				else:
+					# Decrease damage by enemy life
+					self.damage -= enemies[i].lives
+					# Set enemy lives to 0
+					enemies[i].lives = 0
+
+
 
 	def move(self):
 		# Move rect point
 		self.rect.centerx += self.dx
 		self.rect.centery += self.dy
+	
+		# Check if bullet is off screen, if is then need to remove by setting hit to True
+		if self.rect.centerx < 0 or self.rect.centerx > SCREENWIDTH + 100:
+			self.hit = True
+
+		elif self.rect.centery < 0 or self.rect.centery > SCREENHEIGHT + 100:
+			self.hit = True
 
 
 	
@@ -778,9 +826,34 @@ class MegaShot(Tower):
 		super().__init__(image, 'mega', mx, my, 20000, 500, 1000, megaShotLevels)
 
 
-	def bulletCreate(self, pos):
-		self.bullets.append(Shot(self.rect.centerx, self.rect.centery, pos, self.bulletDMG))
+	def bulletCreate(self):
+		# Creates and adds bullet to list of bullets
+		self.bullets.append(Shot(self.rect.centerx, self.rect.centery, map.get_targetPos(), self.bulletDMG))
 		
+
+	def shoot(self):
+		# Searches through all enemies
+		if self.cdTimer <= 0:
+			self.bulletCreate()
+			self.cdTimer = self.cd
+					
+		# Decreases cool down timer if not already 0
+		if self.cdTimer != 0:
+			self.cdTimer -= 1
+
+	def print(self):
+		# Prints tower
+		SCREEN.blit(self.image, (self.x * 50, self.y * 50))
+
+		instance = 0
+		for bullet in self.bullets:
+			# Prints bullets
+			bullet.print()
+			# Checks to see if bullet has hit enemy
+			if bullet.hit == True:
+				# Removes bullet
+				self.bullets.pop(instance)
+			instance += 1
 
 class Soldier(Enemy):
 	# Uses inheritance of enemy class
@@ -789,7 +862,7 @@ class Soldier(Enemy):
 		image = soldierIMG
 		
 		# Calls enemy class initiation with image, type and move cool down
-		super().__init__(image, 'soldier', 2, 1, 30)
+		super().__init__(image, 'soldier', 2, 1, 12)
 
 		# Changes image size to smaller, as default is 40x40 pixels
 		self.image = pygame.transform.scale(image, (10, 20))
@@ -1029,7 +1102,7 @@ class expandHotbar(Button):
 		# Change collapse button show
 		hotbar.collapse.show = True
 		# Set hotbar cool down
-		hotbar.cdTimer = 30
+		hotbar.cdTimer = 40
 
 
 
@@ -1126,7 +1199,7 @@ class Hotbar():
 		self.expand = expandHotbar()
 
 		# Cool down variables
-		self.cd = 10
+		self.cd = 15
 		self.cdTimer = 0
 		self.placing = 'none'
 
@@ -1163,7 +1236,7 @@ class Hotbar():
 			tower['quantity'] = 1
 
 		# Reset key variables
-		self.cdTimer = 10
+		self.cdTimer = self.cd
 		self.placing = 'none'
 		self.__show = False
 
@@ -1227,7 +1300,7 @@ class Hotbar():
 					elif tower == 'Bomb Tower':
 						BombTower(mPos[0], mPos[1])
 					
-					elif tower == 'Mega Tower':
+					elif tower == 'Mega Shot':
 						MegaShot(mPos[0], mPos[1])
 
 			# Exits print function, do not want to print hotbar if placing
@@ -1746,12 +1819,28 @@ def gameUpdate():
 			loop = False
 			return
 		
-		# Checks for range toggle
-		elif pygame.key.get_pressed()[pygame.K_c] and map.togglecd <= 0:
-			# Calls range toggle
-			map.toggleRange()
-		elif pygame.mouse.get_pressed()[0] and hotbar.placing == 'none':
-			showRange()
+	# Checks for range toggle
+	if pygame.key.get_pressed()[pygame.K_c] and map.togglecd <= 0:
+		# Calls range toggle
+		map.toggleRange()
+	elif pygame.mouse.get_pressed()[0] and hotbar.placing == 'none':
+		showRange()
+
+
+	if map.movingTarget:
+		# Moves target
+		map.moveTarget()
+		# Checks if no longer dragging target
+		if not pygame.mouse.get_pressed()[0]:
+			map.movingTarget = False
+
+	elif not map.movingTarget:
+		# Checks if target selected
+		if pygame.mouse.get_pressed()[0] and map.rect.collidepoint(pygame.mouse.get_pos()) and hotbar.placing == 'none':
+			map.movingTarget = True
+			# Moves target
+			map.moveTarget()
+
 	
 	# Decrease toggle cool down
 	if map.togglecd > 0:
@@ -1806,6 +1895,8 @@ def gameUpdate():
 
 	# Outputs player stats - score, lives
 	displayLiveStats()
+
+	map.printTarget()
 
 # Update function to be used when creating map
 def mapCreateUpdate():
@@ -1899,6 +1990,7 @@ plusIMG = pygame.image.load('assets/images/plusSign.png').convert_alpha()
 bombTowerIMG = pygame.image.load('assets/images/bombTower.png').convert_alpha()
 megaTowerIMG = pygame.image.load('assets/images/megaShot.png').convert_alpha()
 explosionIMG = pygame.image.load('assets/images/explosion.png').convert_alpha()
+targetIMG = pygame.image.load('assets/images/crosshair.png').convert_alpha()
 
 # Define a size variable for scaling (e.g., (width, height))
 size = (45, 45)
@@ -1916,6 +2008,7 @@ baseIMG = pygame.transform.scale(baseIMG, size)
 spawnIMG = pygame.transform.scale(spawnIMG, size)
 bombTowerIMG = pygame.transform.scale(bombTowerIMG, size)
 megaTowerIMG = pygame.transform.scale(megaTowerIMG, size)
+targetIMG = pygame.transform.scale(targetIMG, (30, 30))
 plusIMG = pygame.transform.scale(plusIMG, (32, 32))
 
 
