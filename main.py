@@ -1131,16 +1131,17 @@ class Hotbar():
 		self.placing = 'none'
 
 		size = (150, 150)
-		# Testing dictionary
 
 		machineGun = pygame.transform.scale(machineGunIMG, size)
 		turret = pygame.transform.scale(turretIMG, size)
 		bombTower = pygame.transform.scale(bombTowerIMG, size)
+		megaShot = pygame.transform.scale(megaTowerIMG, size)
 
 		self.towersDict = [
 			{'name' : 'Basic Turret', 'image': turret, 'imageRect' : turret.get_rect(), 'quantity' : 1, 'cost' : 1},
-			{'name' : 'Machine Gun',  'image': machineGun,'imageRect' : machineGun.get_rect(), 'quantity' : 1, 'cost' : 2},
-			{'name': 'Bomb Tower',  'image': bombTower,'imageRect' : bombTower.get_rect(), 'quantity' : 1, 'cost' : 4}
+			{'name' : 'Machine Gun',  'image': machineGun, 'imageRect' : machineGun.get_rect(), 'quantity' : 1, 'cost' : 2},
+			{'name': 'Bomb Tower',  'image': bombTower, 'imageRect' : bombTower.get_rect(), 'quantity' : 1, 'cost' : 4},
+			{'name': 'Mega Shot',  'image': megaShot, 'imageRect' : megaShot.get_rect(), 'quantity' : 1, 'cost' : 6}
 		]
 
 		for tower in range(len(self.towersDict)):
@@ -1196,6 +1197,9 @@ class Hotbar():
 				elif self.placing == 'Bomb Tower':
 					SCREEN.blit(bombTowerIMG, (pos))
 
+				elif self.placing == 'Mega Shot':
+					SCREEN.blit(megaTowerIMG, pos)
+
 
 			# If not placing tower and not left clicking
 			elif not pygame.mouse.get_pressed()[0]:
@@ -1222,6 +1226,9 @@ class Hotbar():
 
 					elif tower == 'Bomb Tower':
 						BombTower(mPos[0], mPos[1])
+					
+					elif tower == 'Mega Tower':
+						MegaShot(mPos[0], mPos[1])
 
 			# Exits print function, do not want to print hotbar if placing
 			return
@@ -1956,7 +1963,7 @@ turretUpgrades = [basicTurretLevels, machineTurretLevels, bombTowerLevels, megaS
 
 # Testing game loop
 
-test = True
+test = False
 if test:
 
 	# Testing bomb movement
