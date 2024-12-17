@@ -26,6 +26,15 @@ class Player():
 		self.__lives = 2
 		self.state = 'menu'
 		self.__wave = 0
+		self.__currency = 0
+
+	def currencyInc(self, num):
+		# By getting magnitude, ensure currency increasing
+		self.__currency += abs(num)
+
+	def currencyDec(self, num):
+		# By getting magnitude, ensure currency decreasing
+		self.__currency -= abs(num)
 	
 	def resetWave(self):
 		# Reset wave counter
@@ -100,6 +109,8 @@ class Map():
 
 		# Creates blank array
 		self.array = []
+
+		self.wavePassed = True
 
 	def get_targetPos(self):
 		# Returns target position
@@ -408,6 +419,8 @@ class Enemy():
 			self.pathEnd = True
 			# Call life loss function to decrease player lives
 			player.lifeLoss()
+			# Set wave pass to false
+			map.wavePassed = False
 			# Change pointer to null
 			self.point = -1
 
@@ -1416,12 +1429,13 @@ def spawnEnemy():
 
 	# Check if list of enemies is empty
 	if len(wave) == 0 and len(enemies) == 0:
-		# Gets value to increase lives by		
-		livesInc = getLivesInc(player.getWave())
-		# Increases lives
-		player.incLives(livesInc)
-		# Increments wave counter
-		player.waveInc()
+		if map.wavePassed:
+			# Gets value to increase lives by		
+			livesInc = getLivesInc(player.getWave())
+			# Increases lives
+			player.incLives(livesInc)
+			# Increments wave counter
+			player.waveInc()
 		# Creates new wave
 		wave = newWave()
 		
@@ -1500,6 +1514,7 @@ def getLivesInc(wave):
 
 def newWave():
 	global spawnDelay
+	map.wavePassed = True
 	# Get current wave
 	currentWave = player.getWave()
 	# Decrease spawn delay - more enemies in short time span
