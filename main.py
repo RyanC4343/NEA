@@ -1,4 +1,5 @@
-import pygame, sqlite3
+import pygame
+#from LoginFile import *
 
 # Initialise pygame
 pygame.init()
@@ -30,11 +31,11 @@ class Player():
 
 	def currencyInc(self, num):
 		# By getting magnitude, ensure currency increasing
-		self.__currency += abs(num)
+		self.__currency += abs(round(num, 1))
 
 	def currencyDec(self, num):
 		# By getting magnitude, ensure currency decreasing
-		self.__currency -= abs(num)
+		self.__currency -= abs(round(num, 1))
 
 	def getCurrency(self):
 		return self.__currency
@@ -1231,7 +1232,7 @@ class Hotbar():
 			{'name' : 'Basic Turret', 'image': turret, 'imageRect' : turret.get_rect(), 'quantity' : 1, 'cost' : 1},
 			{'name' : 'Machine Gun',  'image': machineGun, 'imageRect' : machineGun.get_rect(), 'quantity' : 1, 'cost' : 2},
 			{'name': 'Bomb Tower',  'image': bombTower, 'imageRect' : bombTower.get_rect(), 'quantity' : 1, 'cost' : 4},
-			{'name': 'Mega Shot',  'image': megaShot, 'imageRect' : megaShot.get_rect(), 'quantity' : 1, 'cost' : 6}
+			{'name': 'Mega Shot',  'image': megaShot, 'imageRect' : megaShot.get_rect(), 'quantity' : 1, 'cost' : 10}
 		]
 
 		for tower in range(len(self.towersDict)):
@@ -1983,11 +1984,11 @@ def gameOverScreen():
 	if wave // 10 <= 2:
 		increase = wave / 10
 	elif wave // 10 <= 4:
-		increase = (wave / 10) + 2
+		increase = (wave / 10) + 4
 	else:
-		increase = wave // 8
+		increase = wave // 6
 	
-	player.currencyInc(increase)
+	player.currencyInc(round(increase, 1))
 	
 	# Check player state
 	while player.state == 'gameOver':
