@@ -1,4 +1,4 @@
-import pygame
+import pygame, sqlite3
 
 # Initialise pygame
 pygame.init()
@@ -35,6 +35,9 @@ class Player():
 	def currencyDec(self, num):
 		# By getting magnitude, ensure currency decreasing
 		self.__currency -= abs(num)
+
+	def getCurrency(self):
+		return self.__currency
 	
 	def resetWave(self):
 		# Reset wave counter
@@ -646,7 +649,7 @@ class Bomb():
 		self.explosionRange = 100
 		self.damage = damage
 		self.hit = False
-		self.VarHit = 100
+		self.VarHit = 30
 
 		# Calculate movement variables
 		speed = 10
@@ -1174,7 +1177,7 @@ class towerUpgrade():
 					SCREEN.blit((font.render(str(text[row][column]), True, "blue")), (x + ((column) * xGap), y + ((row + 1) * yGap)))
 
 			# Prints button image when level less thn max level
-			if text[row][1] < self.maxLevel:
+			if text[row][1] < self.maxLevel and player.getCurrency() >= 1:
 				# Gets position of image
 				imagePos = [(x + ((column + 0.58) * xGap)), (y + ((row + 1) * yGap))]
 				# Prints image
@@ -1182,6 +1185,7 @@ class towerUpgrade():
 
 				# Checks for click in the range of button
 				if mx >= imagePos[0] and mx <= imagePos[0] + 32 and my >= imagePos[1] and my <= imagePos[1] + 32 and pygame.mouse.get_pressed()[0] and self.cd == 0:
+					player.currencyDec(1)
 					# Resets cool down - needed so that doesn't insta-click and spam the button
 					self.cd = 10
 
@@ -1578,9 +1582,9 @@ def displayLiveStats():
 	waveTextrect.topleft = (SCREENWIDTH * 0.02, 60)
 	SCREEN.blit(waveText, waveTextrect)
 
-def displayGameOverStats():
+def displayGameOverStats(tokensEarned):
 	# Blank rectangle
-	pygame.draw.rect(SCREEN, 'white', pygame.Rect(733, 330, 115 + (20 * len(str(player.getScore()))), 110))
+	pygame.draw.rect(SCREEN, 'white', pygame.Rect(733, 330, max(190, 115 + (20 * len(str(player.getScore())))), 180))
 
 	# Score text display
 	scoreText = font.render('Score: '+str(player.getScore()), True, 'black')
@@ -1595,6 +1599,11 @@ def displayGameOverStats():
 	# Set position
 	waveTextrect.topleft = (737, 405)
 	SCREEN.blit(waveText, waveTextrect)
+
+	tokenText = font.render('Tokens: '+str(tokensEarned), True, 'black')
+	tokenTextrect = tokenText.get_rect()
+	tokenTextrect.topleft = (737, 476)
+	SCREEN.blit(tokenText, tokenTextrect)
 
 
 
@@ -1739,6 +1748,11 @@ def displayMenu():
 	
 	displayLeaderboard(150, 250)
 
+def displayCurrency():
+	# Renders text for currency
+	text = font.render('Tokens: ' + str(player.getCurrency()), True, "blue")
+	# Prints text to screen
+	SCREEN.blit(text, (30, 30))
 
 
 
@@ -1953,6 +1967,8 @@ def upgradeMenuUpdate():
 	for button in upgradeMenu:
 		button.print()
 
+	displayCurrency()
+
 	
 
 	pygame.display.update()
@@ -1962,6 +1978,16 @@ def gameOverScreen():
 	# Empty map towers - leave base and spawn
 	map.clearTowers()
 
+	wave = player.getWave()
+
+	if wave // 10 <= 2:
+		increase = wave / 10
+	elif wave // 10 <= 4:
+		increase = (wave / 10) + 2
+	else:
+		increase = wave // 8
+	
+	player.currencyInc(increase)
 	
 	# Check player state
 	while player.state == 'gameOver':
@@ -1982,7 +2008,7 @@ def gameOverScreen():
 		for button in gameOver:
 			button.print()
 		# Display stats
-		displayGameOverStats()
+		displayGameOverStats(increase)
 
 		# Update screen
 		pygame.display.update()
