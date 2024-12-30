@@ -1071,6 +1071,14 @@ class upgradePageButton(Button):
 	def press(self):
 		player.state = 'upgradeMenu'
 
+class saveDatabaseButton(Button):
+	def __init__(self):
+		super().__init__(1500, 20, 15, 40, 'Save', 'black')
+	
+	def press(self):
+		# Calls save database procedure when clicked
+		saveDatabase()
+
 class buyTower(Button):
 	def __init__(self, x, y, tower):
 		super().__init__(x, y, 30, 35, 'Buy', 'black')
@@ -2028,6 +2036,32 @@ def gameOverScreen():
 		pygame.display.update()
 		CLOCK.tick(FPS)
 
+def saveDatabase():
+	# Get player ID for referencing in SQL
+	id = player.getID()
+	# Get tokens for saving
+	tokens = player.getCurrency()
+	# Get player levels in form of a dictionary
+	turretLevels = [
+		{'name' : 'basicTurret', 'damageLevel': basicTurretLevels.damageLevel ,
+				   'ROFLevel': basicTurretLevels.ROFLevel, 'rangeLevel': basicTurretLevels.rangeLevel},
+
+		{'name' : 'machineGun',  'damageLevel': machineTurretLevels.damageLevel , 
+   'ROFLevel': machineTurretLevels.ROFLevel, 'rangeLevel': machineTurretLevels.rangeLevel},
+
+		{'name': 'bombTower',  'damageLevel': bombTowerLevels.damageLevel , 
+   'ROFLevel': bombTowerLevels.ROFLevel, 'rangeLevel': bombTowerLevels.rangeLevel},
+
+		{'name': 'megaShot',  'damageLevel': megaShotLevels.damageLevel , 
+   'ROFLevel': megaShotLevels.ROFLevel, 'rangeLevel': megaShotLevels.rangeLevel}
+   ]
+	
+	# Call save Data procedure which saves the parameters given to the database
+	saveData(id, tokens, turretLevels)
+
+	print('Database saved')
+	
+
 
 
 # Load images
@@ -2096,7 +2130,7 @@ mainMenu = [createMapButton(800, 320), playMapButton(800, 470), RCTDButton(), up
 gameOver = [RCTDButton(), upgradePageButton(695, 600), playMapButton(905, 600)]
 
 # Define upgrade menu buttons
-upgradeMenu = [RCTDButton()]
+upgradeMenu = [RCTDButton(), saveDatabaseButton()]
 
 turretLevels = DBValues[0]
 player.setCurrency(DBValues[1])

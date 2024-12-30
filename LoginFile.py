@@ -54,9 +54,33 @@ def login(id):
     return turretLevels, tokens[0], id
 
 
+def saveData(id, tokens, turretLevels):
+    # Establish connection to the database
+    connection = sqlite3.connect('Login.db')
+
+    # Create a cursor object to execute SQL commands
+    cursor = connection.cursor()
 
 
-# Login system UI
+    # Update tokens
+    cursor.execute('UPDATE Users SET tokens = ? WHERE id = ?', (tokens, id))
+    
+    # Update turret levels
+    for tower in turretLevels:
+        # Combine levels into a single string (X-X-X as per database format)
+        levelsString = f"{tower['damageLevel']}-{tower['ROFLevel']}-{tower['rangeLevel']}"
+
+        # Update the respective tower column in the database
+        query = f"UPDATE Users SET {tower['name']} = ? WHERE id = ?"
+        cursor.execute(query, (levelsString, id))
+
+    # Commit changes
+    connection.commit()
+    
+    # Close the connection and save the database
+    connection.close()
+
+
 
 def hash(password):
     return hashlib.sha256(password.encode('utf-8')).hexdigest()
