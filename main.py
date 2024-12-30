@@ -33,6 +33,13 @@ class Player():
 	def setID(self, id):
 		self.__ID = id
 
+	def getID(self):
+		return self.__ID
+
+	def setCurrency(self, num):
+		# Rounds parameter to 1 decimal place, also gets magnitude
+		self.__currency = abs(round(num, 1))
+
 	def currencyInc(self, num):
 		# By getting magnitude, ensure currency increasing
 		self.__currency += abs(round(num, 1))
@@ -2092,8 +2099,8 @@ gameOver = [RCTDButton(), upgradePageButton(695, 600), playMapButton(905, 600)]
 upgradeMenu = [RCTDButton()]
 
 turretLevels = DBValues[0]
-player.setID(DBValues[1])
-print(turretLevels)
+player.setCurrency(DBValues[1])
+player.setID(DBValues[2])
 
 for tower in turretLevels:
 	if tower['name'] == 'basicTurret':

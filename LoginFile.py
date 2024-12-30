@@ -42,9 +42,17 @@ def login(id):
                 tower['ROFLevel'] = int(levels[1])
                 tower['rangeLevel'] = int(levels[2])
 
+
+    # Creates query to get tokens
+    cursor.execute('SELECT tokens FROM Users WHERE id = ?', (id,))
     
-    # Returns the turret levels and the user id - for further changes to database
-    return turretLevels, id
+    # Executes query and stores result
+    tokens = cursor.fetchone()
+
+    
+    # Returns the turret levels, tokens and the user id - for further changes to database
+    return turretLevels, tokens[0], id
+
 
 
 
