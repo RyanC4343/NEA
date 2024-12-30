@@ -1,5 +1,5 @@
 import pygame
-#from LoginFile import *
+from LoginFile import *
 
 # Initialise pygame
 pygame.init()
@@ -28,6 +28,10 @@ class Player():
 		self.state = 'menu'
 		self.__wave = 0
 		self.__currency = 0
+		self.__ID = None
+
+	def setID(self, id):
+		self.__ID = id
 
 	def currencyInc(self, num):
 		# By getting magnitude, ensure currency increasing
@@ -1140,12 +1144,14 @@ class collapseHotbar(Button):
 		hotbar.expand.show = True
 
 class towerUpgrade():
-	def __init__(self, towerName, x, y):
+	def __init__(self, towerName, x, y, levels = None):
+		if levels == None:
+			levels = {'damageLevel': 1, 'rangeLevel': 1, 'ROFLevel': 1}
 		self.towerName = towerName
 		# Set levels for damage, range and rate of fire
-		self.damageLevel = 1
-		self.rangeLevel = 1
-		self.ROFLevel = 1
+		self.damageLevel = levels['damageLevel']
+		self.rangeLevel = levels['rangeLevel']
+		self.ROFLevel = levels['ROFLevel']
 		self.maxLevel = 5
 		self.x = x
 		self.y = y
@@ -2085,15 +2091,31 @@ gameOver = [RCTDButton(), upgradePageButton(695, 600), playMapButton(905, 600)]
 # Define upgrade menu buttons
 upgradeMenu = [RCTDButton()]
 
+turretLevels = DBValues[0]
+player.setID(DBValues[1])
+print(turretLevels)
 
-basicTurretLevels = towerUpgrade('Basic Turret', 60, 250)
-machineTurretLevels = towerUpgrade('Machine Gun', 400, 250)
-bombTowerLevels = towerUpgrade('Bomb Tower', 740, 250)
-megaShotLevels = towerUpgrade('Mega Shot', 1080, 250)
+for tower in turretLevels:
+	if tower['name'] == 'basicTurret':
+		basicTurretLevels = towerUpgrade('Basic Turret', 60, 250, tower)
+	elif tower['name'] == 'machineGun':
+		machineTurretLevels = towerUpgrade('Machine Gun', 400, 250, tower)
+
+
+	elif tower['name'] == 'bombTower':
+		bombTowerLevels = towerUpgrade('Bomb Tower', 740, 250, tower)
+
+	elif tower['name'] == 'megaShot':
+		megaShotLevels = towerUpgrade('Mega Shot', 1080, 250, tower)
+
+
+
 # Create blank levels for spawn and base - both classed as turrets
 blankLevels = towerUpgrade('', 0, 0)
 
 turretUpgrades = [basicTurretLevels, machineTurretLevels, bombTowerLevels, megaShotLevels]
+
+
 
 
 # Testing game loop

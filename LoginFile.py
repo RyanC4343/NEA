@@ -4,12 +4,6 @@ from tkinter import messagebox
 import hashlib
 
 
-# Establish connection to the database
-connection = sqlite3.connect('Login.db')
-
-# Create a cursor object to execute SQL commands
-cursor = connection.cursor()
-
 def addTestData():
     # Add data to table
     username = 'User2'
@@ -20,6 +14,39 @@ def addTestData():
             INSERT INTO users (username, passHash)
             VALUES (?, ?)
         ''', (username, passwordHash))
+    
+def login(id):
+
+    turretLevels = [
+        {'name' : 'basicTurret', 'damageLevel': '', 'ROFLevel': '', 'rangeLevel': ''},
+		{'name' : 'machineGun',  'damageLevel': '', 'ROFLevel': '', 'rangeLevel': ''},
+		{'name': 'bombTower',  'damageLevel': '', 'ROFLevel': '', 'rangeLevel': ''},
+		{'name': 'megaShot',  'damageLevel': '', 'ROFLevel': '', 'rangeLevel': ''}
+    ]
+
+    for tower in turretLevels:
+        # Creates the query
+        query = f"SELECT {tower['name']} FROM Users WHERE id = ?"
+        # Executes the query
+        cursor.execute(query, (id,))
+        # Stores the result of the query
+        result = cursor.fetchone()
+
+        # Splits the results up to store the individual towers and levels
+        if result and result[0]:
+            # Split the string by '-'
+            levels = result[0].split('-')
+            # Ensure it has the expected number of parts
+            if len(levels) == 3:
+                tower['damageLevel'] = int(levels[0])
+                tower['ROFLevel'] = int(levels[1])
+                tower['rangeLevel'] = int(levels[2])
+
+    
+    # Returns the turret levels and the user id - for further changes to database
+    return turretLevels, id
+
+
 
 # Login system UI
 
@@ -27,22 +54,32 @@ def hash(password):
     return hashlib.sha256(password.encode('utf-8')).hexdigest()
 
 def submitAction():
+    global username_entry, password_entry, turretLevels, DBValues
     username = username_entry.get()
     passwordHash = hash(password_entry.get())
-    cursor.execute('SELECT passHash FROM Users WHERE username = ?', (username,))
+    cursor.execute('SELECT passHash, id FROM Users WHERE username = ?', (username,))
     result = cursor.fetchone()
 
     if result:
         storedHash = result[0]
         if passwordHash == storedHash:
             messagebox.showinfo('Login success', 'Welcome '+ username)
-            login()
+            DBValues = login(result[1])
+            root.destroy()
+            
+            
 
         else:
             messagebox.showerror("Login Failed", "Incorrect password.")
     else:
         messagebox.showerror("Login Failed", "Username not found.")
 
+
+# Establish connection to the database
+connection = sqlite3.connect('Login.db')
+
+# Create a cursor object to execute SQL commands
+cursor = connection.cursor()
 
 # Create the main window
 root = tk.Tk()
@@ -60,31 +97,20 @@ root.geometry(f"{window_width}x{window_height}+{position_right}+{position_top}")
 username_label = tk.Label(root, text = "Username:")
 username_label.pack(pady = (20, 5))
 username_entry = tk.Entry(root, width = 30)
-username_entry.pack(pady=(0, 10))
+username_entry.pack(pady = (0, 10))
 
 # Create and place the password label and entry
-password_label = tk.Label(root, text="Password:")
-password_label.pack(pady=(10, 5))
+password_label = tk.Label(root, text = "Password:")
+password_label.pack(pady = (10, 5))
 password_entry = tk.Entry(root, show="*", width=30)
-password_entry.pack(pady=(0, 10))
+password_entry.pack(pady = (0, 10))
 
 # Create and place the submit button
-submit_button = tk.Button(root, text="Submit", command=submitAction)
-submit_button.pack(pady=(10, 20))
+submit_button = tk.Button(root, text="Submit", command = submitAction)
+submit_button.pack(pady = (10, 20))
 
 # Start the Tkinter event loop
-root.mainloop()
-
-def addTestData():
-    # Add data to table
-    username = 'User2'
-    password = 'password2'
-    passwordHash = hash(password)
-
-    cursor.execute('''
-            INSERT INTO users (username, passHash)
-            VALUES (?, ?)
-        ''', (username, passwordHash))
+turretLevels = root.mainloop()
 
 
 # Commit changes and close the connection
