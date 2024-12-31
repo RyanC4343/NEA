@@ -162,9 +162,7 @@ def registerAction():
         connection.commit()
         # Display success message
         messagebox.showinfo("Success", "Account registered successfully!")
-        # Close registration window
-        registerWindow.destroy()
-        root.destroy()
+        
 
 
     # If inserting fails, display error
@@ -172,14 +170,33 @@ def registerAction():
         messagebox.showerror("Error", f"Registration failed: {e}")
 
 
-        cursor.execute('SELECT id FROM Users WHERE username = ?', (username,))
-        result = cursor.fetchone()
-        
-        DBValues = login(result[0])
+    # Gets ID of new user added
+    cursor.execute('SELECT id FROM Users WHERE username = ?', (username,))
+    result = cursor.fetchone()
+    id = result[0]
+    print(id)
+    
+    # Define default values for DBValues to be used in main file
+    turretLevelsDictionary = [
+        {'name' : 'basicTurret', 'damageLevel': 1, 'ROFLevel': 1, 'rangeLevel': 1},
+		{'name' : 'machineGun',  'damageLevel': 1, 'ROFLevel': 1, 'rangeLevel': 1},
+		{'name': 'bombTower',  'damageLevel': 1, 'ROFLevel': 1, 'rangeLevel': 1},
+		{'name': 'megaShot',  'damageLevel': 1, 'ROFLevel': 1, 'rangeLevel': 1}
+    ]
+
+    tokens = 0
+
+    DBValues = [turretLevelsDictionary, tokens, id]
+
+    # Close registration window
+    registerWindow.destroy()
+    root.destroy()
 
 def validUsername(username):
     # Check username length
     if len(username) < 6:
+        messagebox.showerror("Error", "Username too short\nMust be at least 6 characters")
+
         return False
     
     # Loops through all characters in username
@@ -244,6 +261,26 @@ def validPassword(password):
     if not hasSpecial:
         messagebox.showerror("Error", "Password must contain special character(s)\nSuch as: !@#$%")
         return False
+    
+def continueGuest():
+    global DBValues
+    
+    # Define default values for DBValues to be used in main file
+    turretLevels = [
+        {'name' : 'basicTurret', 'damageLevel': 1, 'ROFLevel': 1, 'rangeLevel': 1},
+		{'name' : 'machineGun',  'damageLevel': 1, 'ROFLevel': 1, 'rangeLevel': 1},
+		{'name': 'bombTower',  'damageLevel': 1, 'ROFLevel': 1, 'rangeLevel': 1},
+		{'name': 'megaShot',  'damageLevel': 1, 'ROFLevel': 1, 'rangeLevel': 1}
+    ]
+
+    tokens = 0
+
+    id = None
+
+    DBValues = [turretLevels, tokens, id]
+
+    # Collapse window
+    root.destroy()
         
 
 
@@ -258,7 +295,7 @@ root = tk.Tk()
 root.title("Login Screen")
 
 # Set window size and center it on the screen
-window_width, window_height = 300, 250
+window_width, window_height = 300, 300
 screen_width = root.winfo_screenwidth()
 screen_height = root.winfo_screenheight()
 position_top = int((screen_height - window_height) / 2)
@@ -283,7 +320,11 @@ submit_button.pack(pady = (10, 20))
 
 # Create and place the register button
 register_button = tk.Button(root, text="Register account", command = registerWindowProcedure)
-register_button.pack(pady=(5, 10))
+register_button.pack(pady = (5, 10))
+
+# Create and place continue as guest button
+guest_button = tk.Button(root, text = "Continue as guest", command = continueGuest)
+guest_button.pack(pady = (2, 8))
 
 # Start the Tkinter event loop
 turretLevels = root.mainloop()

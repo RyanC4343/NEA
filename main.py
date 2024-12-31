@@ -2130,7 +2130,7 @@ mainMenu = [createMapButton(800, 320), playMapButton(800, 470), RCTDButton(), up
 gameOver = [RCTDButton(), upgradePageButton(695, 600), playMapButton(905, 600)]
 
 # Define upgrade menu buttons
-upgradeMenu = [RCTDButton(), saveDatabaseButton()]
+upgradeMenu = [RCTDButton()]
 
 
 # Determine game loops
@@ -2144,12 +2144,18 @@ else:
 	run = False
 
 
-
 try:
-	# Access values loaded from database
+	# If this condition is met, player is continuing as guest
+	if DBValues[2] != None:
+		# Access values loaded from database
+		player.setID(DBValues[2])
+
+		# If user logged into account, allow saves to database
+		upgradeMenu.append(saveDatabaseButton())
+
+		
 	turretLevels = DBValues[0]
 	player.setCurrency(DBValues[1])
-	player.setID(DBValues[2])
 
 	# Loop through towers and create level instances
 	for tower in turretLevels:
@@ -2165,14 +2171,11 @@ try:
 		elif tower['name'] == 'megaShot':
 			megaShotLevels = towerUpgrade('Mega Shot', 1080, 250, tower)
 
-
-
 	# Create blank levels for spawn and base - both classed as turrets
 	blankLevels = towerUpgrade('', 0, 0)
 
 	# Creates turret levels list
 	turretUpgrades = [basicTurretLevels, machineTurretLevels, bombTowerLevels, megaShotLevels]
-	
 
 except:
 	# Output error
