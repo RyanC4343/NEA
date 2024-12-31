@@ -114,8 +114,8 @@ class Map():
 		self.rows = y
 		self.created = False
 		self.waypoints = []
-		self.toggleRangeVar = False
-		self.togglecd = 5
+		self.toggleRangeVar = True
+		self.togglecd = getFPS() / 6
 
 		self.rect = targetIMG.get_rect()
 		self.rect.center = (SCREENWIDTH / 2, SCREENHEIGHT / 2)
@@ -144,8 +144,7 @@ class Map():
 
 	def toggleRange(self):
 		# Set cool down if called
-		self.togglecd = 4
-		
+		self.togglecd = getFPS() / 6
 		# Toggle range variable
 		if self.toggleRangeVar == False:
 			self.toggleRangeVar = True
@@ -1154,7 +1153,7 @@ class expandHotbar(Button):
 		# Call parent class init, text = '>'
 		super().__init__(7, SCREENHEIGHT // 2, 20, 32, '>', 'white', 'black')
 		# Default show to true
-		self.show = True
+		self.show = False
 		self.hoverColour = 'blue'
 
 	def press(self):
@@ -1174,7 +1173,7 @@ class collapseHotbar(Button):
 		# Call parent class init, text = '<'
 		super().__init__(187, SCREENHEIGHT // 2, 20, 32, '<', 'white', 'black')
 		# Default show to false
-		self.show = False
+		self.show = True
 		self.hoverColour = 'blue'
 
 	def press(self):
@@ -1258,15 +1257,15 @@ class Hotbar():
 		self.width = 180
 		self.rect = pygame.Rect(0, 100, self.width, self.height)
 		# Define toggle variable - show
-		self.__show = False
+		self.__show = True
 
 		# Expand and collapse buttons
 		self.collapse = collapseHotbar()
 		self.expand = expandHotbar()
 
 		# Cool down variables
-		self.cd = 15
-		self.cdTimer = 0
+		self.cd = getFPS()
+		self.cdTimer = self.cd
 		self.placing = 'none'
 
 		size = (150, 150)
@@ -1304,7 +1303,9 @@ class Hotbar():
 		# Reset key variables
 		self.cdTimer = self.cd
 		self.placing = 'none'
-		self.__show = False
+		self.__show = True
+		self.collapse.show = True
+		self.expand.show = False
 
 	
 	def print(self):
@@ -1417,9 +1418,6 @@ class Hotbar():
 						for _ in range(cost):
 							player.lifeLoss()
 
-					else:
-						# Display message to user
-						print('Insufficient funds')
 
 		# Decrease cool down
 		if self.cdTimer > 0:
@@ -2093,6 +2091,10 @@ def saveDatabase():
 	saveData(id, tokens, turretLevels)
 
 	print('Database saved')
+
+def getFPS():
+	global FPS
+	return FPS
 	
 
 
