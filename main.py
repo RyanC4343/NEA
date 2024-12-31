@@ -8,7 +8,7 @@ pygame.init()
 SCREENWIDTH = 1600
 SCREENHEIGHT = 1000
 SCREENSIZE = [SCREENWIDTH, SCREENHEIGHT]
-FPS = 60
+FPS = 20
 font = pygame.font.Font('freesansbold.ttf', 32)
 fontSmall = pygame.font.Font('freesansbold.ttf', 18)
 
@@ -1079,6 +1079,33 @@ class saveDatabaseButton(Button):
 		# Calls save database procedure when clicked
 		saveDatabase()
 
+class sloMo(Button):
+	def __init__(self):
+		super().__init__(770, 25, 20, 20, 'Slow', 'black')
+		self.FPS = 20
+
+	def press(self):
+		global FPS
+		FPS = self.FPS
+
+class normal(Button):
+	def __init__(self):
+		super().__init__(800, 25, 20, 20, 'Norm', 'black')
+		self.FPS = 60
+
+	def press(self):
+		global FPS
+		FPS = self.FPS
+
+class fastForward(Button):
+	def __init__(self):
+		super().__init__(830, 25, 20, 20, 'Fast', 'black')
+		self.FPS = 240
+
+	def press(self):
+		global FPS
+		FPS = self.FPS
+
 class buyTower(Button):
 	def __init__(self, x, y, tower):
 		super().__init__(x, y, 30, 35, 'Buy', 'black')
@@ -1797,7 +1824,7 @@ To place your base: right click on either green tile or last clicked tile""")
 		# Map creation update screen function
 		mapCreateUpdate()
 		pygame.display.update()
-		for frame in range(132):
+		for frame in range(FPS * 2):
 			CLOCK.tick(FPS)
 
 		if map.created == True:
@@ -1948,6 +1975,12 @@ def gameUpdate():
 	displayLiveStats()
 
 	map.printTarget()
+
+	# Print the different buttons for speeds
+	for button in speedButtons:
+		if FPS != button.FPS:
+			button.print()
+
 
 # Update function to be used when creating map
 def mapCreateUpdate():
@@ -2131,6 +2164,9 @@ gameOver = [RCTDButton(), upgradePageButton(695, 600), playMapButton(905, 600)]
 
 # Define upgrade menu buttons
 upgradeMenu = [RCTDButton()]
+
+# Game run speed buttons
+speedButtons = [sloMo(), normal(), fastForward()]
 
 
 # Determine game loops
