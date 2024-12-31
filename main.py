@@ -1073,7 +1073,7 @@ class upgradePageButton(Button):
 
 class saveDatabaseButton(Button):
 	def __init__(self):
-		super().__init__(1500, 20, 15, 40, 'Save', 'black')
+		super().__init__(1500, 20, 50, 40, 'Save', 'black')
 	
 	def press(self):
 		# Calls save database procedure when clicked
@@ -2132,36 +2132,64 @@ gameOver = [RCTDButton(), upgradePageButton(695, 600), playMapButton(905, 600)]
 # Define upgrade menu buttons
 upgradeMenu = [RCTDButton(), saveDatabaseButton()]
 
-turretLevels = DBValues[0]
-player.setCurrency(DBValues[1])
-player.setID(DBValues[2])
 
-for tower in turretLevels:
-	if tower['name'] == 'basicTurret':
-		basicTurretLevels = towerUpgrade('Basic Turret', 60, 250, tower)
-	elif tower['name'] == 'machineGun':
-		machineTurretLevels = towerUpgrade('Machine Gun', 400, 250, tower)
+# Determine game loops
 
+# If test false, run true (this enters main loop)
+test = False
 
-	elif tower['name'] == 'bombTower':
-		bombTowerLevels = towerUpgrade('Bomb Tower', 740, 250, tower)
-
-	elif tower['name'] == 'megaShot':
-		megaShotLevels = towerUpgrade('Mega Shot', 1080, 250, tower)
+if test == False:
+	run = True
+else:
+	run = False
 
 
 
-# Create blank levels for spawn and base - both classed as turrets
-blankLevels = towerUpgrade('', 0, 0)
+try:
+	# Access values loaded from database
+	turretLevels = DBValues[0]
+	player.setCurrency(DBValues[1])
+	player.setID(DBValues[2])
 
-turretUpgrades = [basicTurretLevels, machineTurretLevels, bombTowerLevels, megaShotLevels]
+	# Loop through towers and create level instances
+	for tower in turretLevels:
+		if tower['name'] == 'basicTurret':
+			basicTurretLevels = towerUpgrade('Basic Turret', 60, 250, tower)
+
+		elif tower['name'] == 'machineGun':
+			machineTurretLevels = towerUpgrade('Machine Gun', 400, 250, tower)
+
+		elif tower['name'] == 'bombTower':
+			bombTowerLevels = towerUpgrade('Bomb Tower', 740, 250, tower)
+
+		elif tower['name'] == 'megaShot':
+			megaShotLevels = towerUpgrade('Mega Shot', 1080, 250, tower)
+
+
+
+	# Create blank levels for spawn and base - both classed as turrets
+	blankLevels = towerUpgrade('', 0, 0)
+
+	# Creates turret levels list
+	turretUpgrades = [basicTurretLevels, machineTurretLevels, bombTowerLevels, megaShotLevels]
+	
+
+except:
+	# Output error
+	print("Login failed")
+	# Will not enter loops
+	run = False
+	test = False
+	# Exit pygame
+	pygame.quit()
+
+
+
 
 
 
 
 # Testing game loop
-
-test = False
 if test:
 
 	# Testing bomb movement
@@ -2189,11 +2217,6 @@ if test:
 
 
 
-# Game loop
-if test == False:
-	run = True
-else:
-	run = False
 
 while run:
 
