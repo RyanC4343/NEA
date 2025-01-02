@@ -1,8 +1,9 @@
 import pygame
 from LoginFile import *
 
-# Initialise pygame
+# Initialise pygame and music mixer
 pygame.init()
+pygame.mixer.init()
 
 # Define constants
 SCREENWIDTH = 1600
@@ -14,7 +15,7 @@ fontSmall = pygame.font.Font('freesansbold.ttf', 18)
 
 # Create screen
 
-SCREEN = pygame.display.set_mode(SCREENSIZE) 
+SCREEN = pygame.display.set_mode(SCREENSIZE)
 pygame.display.set_caption('Td')
 
 # Define clock
@@ -29,6 +30,8 @@ class Player():
 		self.__wave = 0
 		self.__currency = 0
 		self.__ID = None
+		self.sound = 0
+		self.soundTimer = 0
 
 	def setID(self, id):
 		self.__ID = id
@@ -82,6 +85,10 @@ class Player():
 	def gameOver(self):
 		# Change state to game over
 		self.state = 'gameOver'
+
+		# Play game over sound
+		gameOverSound.play()
+
 		# Call leaderboard save
 		saveLeaderboard()
 
@@ -433,6 +440,11 @@ class Enemy():
 			self.pathEnd = True
 			# Call life loss function to decrease player lives
 			player.lifeLoss()
+
+			if player.getLives() > 0:
+				# Play life loss sound
+				loseLifeSound.play()
+
 			# Set wave pass to false
 			map.wavePassed = False
 			# Change pointer to null
@@ -1105,6 +1117,37 @@ class fastForward(Button):
 		global FPS
 		FPS = self.FPS
 
+class soundButton(Button):
+	def __init__(self):
+		super().__init__(1540, 90, 50, 40, 'Sound', 'black')
+
+	def press(self):
+		# Check cool down for toggling sound
+		if player.soundTimer > 0:
+			return
+		
+		# Get current sound
+		vol = player.sound
+		
+		# Change current sound
+		if vol == 1:
+			vol = 0
+		else:
+			vol = 1
+
+		# Adjust sound of effects
+		gameOverSound.set_volume(vol)
+		newGameSound.set_volume(vol)
+		newWaveSound.set_volume(vol)
+		loseLifeSound.set_volume(vol)
+
+		# Adjust sound of main variable
+		player.sound = vol
+
+		# Cool down for toggling sound is half second
+		player.soundTimer = getFPS() / 2
+	
+
 class buyTower(Button):
 	def __init__(self, x, y, tower):
 		super().__init__(x, y, 30, 35, 'Buy', 'black')
@@ -1565,6 +1608,11 @@ def getLivesInc(wave):
 
 def newWave():
 	global spawnDelay
+
+	if map.wavePassed:
+		# Play new wave sound
+		newWaveSound.play()
+
 	map.wavePassed = True
 	# Get current wave
 	currentWave = player.getWave()
@@ -1854,7 +1902,13 @@ def gameLoop():
 # Function to clear stats for new game
 def newGame():
 	# Define global variables
-	global wave, enemies, hotbar
+	global wave, enemies, FPS
+
+	# Play new game sound
+	newGameSound.play()
+
+	FPS = 20
+
 	# Reset game stats
 	player.setLives(5)
 	player.resetScore()
@@ -1979,6 +2033,10 @@ def gameUpdate():
 		if FPS != button.FPS:
 			button.print()
 
+	soundBt.print()
+	# Decrease timer for cool down toggle
+	player.soundTimer -= 1
+
 
 # Update function to be used when creating map
 def mapCreateUpdate():
@@ -2039,8 +2097,11 @@ def gameOverScreen():
 		increase = (wave / 10) + 4
 	else:
 		increase = wave // 6
+
+	# Round to 1 decimal place
+	increase = round(increase, 1)
 	
-	player.currencyInc(round(increase, 1))
+	player.currencyInc(increase)
 	
 	# Check player state
 	while player.state == 'gameOver':
@@ -2135,6 +2196,12 @@ megaTowerIMG = pygame.transform.scale(megaTowerIMG, size)
 targetIMG = pygame.transform.scale(targetIMG, (30, 30))
 plusIMG = pygame.transform.scale(plusIMG, (32, 32))
 
+# Load sounds
+gameOverSound = pygame.mixer.Sound('assets/sounds/gameOver.wav')
+newGameSound = pygame.mixer.Sound('assets/sounds/enterGame.wav')
+newWaveSound = pygame.mixer.Sound('assets/sounds/newWave.wav')
+loseLifeSound = pygame.mixer.Sound('assets/sounds/loseLife.wav')
+
 
 
 # Create instances of tile class
@@ -2169,6 +2236,9 @@ upgradeMenu = [RCTDButton()]
 
 # Game run speed buttons
 speedButtons = [sloMo(), normal(), fastForward()]
+
+# Sound button
+soundBt = soundButton()
 
 
 # Determine game loops
