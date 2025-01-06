@@ -26,6 +26,7 @@ class Player():
 		# Encapsulate some variables
 		self.__score = 0
 		self.__lives = 2
+		self.name = 'Guest'
 		self.state = 'menu'
 		self.__wave = 0
 		self.__currency = 0
@@ -1528,8 +1529,8 @@ def spawnEnemy():
 			livesInc = getLivesInc(player.getWave())
 			# Increases lives
 			player.incLives(livesInc)
-			# Increments wave counter
-			player.waveInc()
+		# Increments wave counter
+		player.waveInc()
 		# Creates new wave
 		wave = newWave()
 		
@@ -1747,14 +1748,14 @@ def saveLeaderboard():
 	# Loop through from lowest score in scores to highest
 	for x in range(len(LBScores) - 1, -1, -1):
 		# Checks if user score is less than score in list
-		if LBScores[x] > score or x == 0:
+		if LBScores[x][0] > score or x == 0:
 
 			# Check for first case - user score is higher than all items in file
-			if LBScores[0] < score:
+			if LBScores[0][0] < score:
 				# Saves items in list to temp variable
-				temp = LBScores
+				temp = [LBScores]
 				# Set first item in list to user score
-				LBScores = [score]
+				LBScores = [[score, player.name]]
 
 				# Appends items in temp variable to list
 				for t in temp:
@@ -1771,7 +1772,7 @@ def saveLeaderboard():
 			# Appends front, score and back of the list in order, this works like an insertion sort
 			for Q in front:
 				LBScores.append(Q)
-			LBScores.append(score)
+			LBScores.append([str(score), player.name])
 			for Q in back:
 				LBScores.append(Q)
 			
@@ -1823,7 +1824,7 @@ def saveLBFile(LBScores):
 
 # Function to display leaderboard
 def displayLeaderboard(x, y):
-	LBScores = loadLeaderboard()
+	global LBScores
 
 	text = font.render('All time leaderboard', True, "blue")
 	SCREEN.blit(text, (x, y))
@@ -1831,7 +1832,7 @@ def displayLeaderboard(x, y):
 	# Takes item in LBScores
 	for pos in range(len(LBScores)):
 		# Gets text for item in list then renders the text
-		current = font.render(str(LBScores[pos]), True, "blue")
+		current = font.render((str(LBScores[pos][0]) + ' - ' + LBScores[pos][1]), True, "blue")
 		
 		# Blits items to screen
 		SCREEN.blit(current, (x, y + 10 + (40 * (pos + 0.8))))
@@ -2086,6 +2087,10 @@ def upgradeMenuUpdate():
 	CLOCK.tick(FPS)
 
 def gameOverScreen():
+	global LBScores
+
+	LBScores = loadLeaderboard()
+
 	# Empty map towers - leave base and spawn
 	map.clearTowers()
 
@@ -2240,6 +2245,9 @@ speedButtons = [sloMo(), normal(), fastForward()]
 # Sound button
 soundBt = soundButton()
 
+LBScores = loadLeaderboard()
+
+
 
 # Determine game loops
 
@@ -2257,6 +2265,7 @@ try:
 	if DBValues[2] != None:
 		# Access values loaded from database
 		player.setID(DBValues[2])
+		player.name = DBValues[3]
 
 		# If user logged into account, allow saves to database
 		upgradeMenu.append(saveDatabaseButton())

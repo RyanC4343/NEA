@@ -96,7 +96,8 @@ def submitAction():
         storedHash = result[0]
         if passwordHash == storedHash:
             messagebox.showinfo('Login success', 'Welcome '+ username)
-            DBValues = login(result[1])
+            DBValues = list(login(result[1]))
+            DBValues.append(username)
             root.destroy()
             
             
@@ -186,7 +187,7 @@ def registerAction():
 
     tokens = 0
 
-    DBValues = [turretLevelsDictionary, tokens, id]
+    DBValues = [turretLevelsDictionary, tokens, id, username]
 
     # Close registration window
     registerWindow.destroy()
